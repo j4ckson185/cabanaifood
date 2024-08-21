@@ -22,8 +22,8 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
         if (!resposta.ok) {
             let errorMessage = `Erro na API: ${resposta.status} ${resposta.statusText}`;
             try {
-                const errorData = JSON.parse(texto);
-                if (errorData.error) {
+                const errorData = texto ? JSON.parse(texto) : null;
+                if (errorData && errorData.error) {
                     errorMessage += `\nDetalhes: ${errorData.error}`;
                 }
             } catch (parseError) {
@@ -32,7 +32,12 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
             throw new Error(errorMessage);
         }
 
-        return texto ? JSON.parse(texto) : null;
+        // Se a resposta for vazia, não tente interpretar como JSON
+        if (!texto) {
+            return null;
+        }
+
+        return JSON.parse(texto);
     } catch (error) {
         console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
         throw error;
