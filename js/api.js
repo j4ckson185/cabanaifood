@@ -1,6 +1,9 @@
 const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net';
 
-async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 segundo
+
+async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null, tentativa = 0) {
     try {
         const opcoes = {
             method: metodo,
@@ -13,7 +16,7 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
             opcoes.body = JSON.stringify(corpo);
         }
 
-        console.log(`Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
+        console.log(`Tentativa ${tentativa + 1}: Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
         const resposta = await fetch(`${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
         
         const texto = await resposta.text();
@@ -28,6 +31,11 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
         }
 
         if (!resposta.ok) {
+            if (resposta.status === 500 && tentativa < MAX_RETRIES) {
+                console.log(`Tentando novamente em ${RETRY_DELAY}ms...`);
+                await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+                return fazerRequisicaoAPI(endpoint, metodo, corpo, tentativa + 1);
+            }
             throw new Error(data.error || `Erro na API: ${resposta.status} ${resposta.statusText}`);
         }
 
