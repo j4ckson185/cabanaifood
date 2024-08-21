@@ -17,7 +17,6 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
 
-        // Tratamento específico para respostas vazias
         if (!texto || texto.trim() === '') {
             return { status: resposta.status, message: 'Resposta vazia do servidor' };
         }
