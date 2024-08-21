@@ -54,6 +54,10 @@ export async function obterMotivoCancelamento(orderId) {
     return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/cancellationReasons`);
 }
 
-export async function cancelarPedido(orderId, cancelCodeId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
+export async function cancelarPedido(orderId, cancelCodeId, reason) {
+  const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', {
+    cancellationCode: cancelCodeId,
+    reason: reason
+  });
+  return { fullCode: 'CANCELLED', ...resultado };
 }
