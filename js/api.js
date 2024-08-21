@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net'; // Substitua SEU-PROJETO pelo ID do seu projeto Firebase
+const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net';
 
 async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
     try {
