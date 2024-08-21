@@ -224,8 +224,10 @@ function traduzirMetodoPagamento(metodo) {
 window.confirmarPedidoManual = async function(orderId) {
     try {
         const resultado = await confirmarPedido(orderId);
-        if (resultado.fullCode) {
+        if (resultado && resultado.fullCode) {
             atualizarStatusPedido(orderId, resultado.fullCode);
+        } else {
+            console.error('Erro: fullCode não encontrado na resposta:', resultado);
         }
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
@@ -237,8 +239,10 @@ window.confirmarPedidoManual = async function(orderId) {
 window.despacharPedidoManual = async function(orderId) {
     try {
         const resultado = await despacharPedido(orderId);
-        if (resultado.fullCode) {
+        if (resultado && resultado.fullCode) {
             atualizarStatusPedido(orderId, resultado.fullCode);
+        } else {
+            console.error('Erro: fullCode não encontrado na resposta:', resultado);
         }
         alert('Pedido despachado com sucesso!');
     } catch (error) {
@@ -261,8 +265,10 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         
         if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            if (resultado.fullCode) {
+            if (resultado && resultado.fullCode) {
                 atualizarStatusPedido(orderId, resultado.fullCode);
+            } else {
+                console.error('Erro: fullCode não encontrado na resposta:', resultado);
             }
             alert('Pedido cancelado com sucesso!');
         } else {
