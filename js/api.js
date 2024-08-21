@@ -20,7 +20,16 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
         console.log(`Resposta da API (${resposta.status}):`, texto);
 
         if (!resposta.ok) {
-            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}\nResposta: ${texto}`);
+            let errorMessage = `Erro na API: ${resposta.status} ${resposta.statusText}`;
+            try {
+                const errorData = JSON.parse(texto);
+                if (errorData.error) {
+                    errorMessage += `\nDetalhes: ${errorData.error}`;
+                }
+            } catch (parseError) {
+                console.error('Erro ao tentar analisar a mensagem de erro:', parseError);
+            }
+            throw new Error(errorMessage);
         }
 
         return texto ? JSON.parse(texto) : null;
