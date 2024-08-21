@@ -30,7 +30,27 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
     }
 }
 
-// ... (outras funções permanecem as mesmas)
+export async function polling() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/polling`);
+        if (!response.ok) {
+            throw new Error(`Erro no polling: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Erro no polling:', error);
+        throw error;
+    }
+}
+
+export async function acknowledgeEventos(eventIds) {
+    return fazerRequisicaoAPI('/events/v1.0/events/acknowledgment', 'POST', eventIds);
+}
+
+export async function obterDetalhesPedido(orderId) {
+    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}`);
+}
 
 export async function confirmarPedido(orderId) {
     try {
@@ -52,6 +72,10 @@ export async function despacharPedido(orderId) {
         console.error('Erro ao despachar pedido:', error);
         throw error;
     }
+}
+
+export async function obterMotivoCancelamento(orderId) {
+    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/cancellationReasons`);
 }
 
 export async function cancelarPedido(orderId, cancelCodeId) {
