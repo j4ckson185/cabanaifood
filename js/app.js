@@ -92,7 +92,7 @@ function exibirPedido(pedido) {
     
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
-        <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
+        <p>Status: <span class="status-pedido status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
         <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
         <p>Tipo: ${pedido.orderType || 'N/A'}</p>
         <p>Momento: ${pedido.orderTiming || 'N/A'}</p>
