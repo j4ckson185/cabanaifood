@@ -19,11 +19,18 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
 
+        // Mesmo com status 500, tentamos processar a resposta
+        const data = texto ? JSON.parse(texto) : null;
+
         if (!resposta.ok) {
+            // Se a resposta contém um erro do iFood, retornamos os dados
+            if (data && data.error) {
+                return data;
+            }
             throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}\nResposta: ${texto}`);
         }
 
-        return texto ? JSON.parse(texto) : null;
+        return data;
     } catch (error) {
         console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
         throw error;
