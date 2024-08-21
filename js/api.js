@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './config.js';
+const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net';
 
 let accessToken = null;
 let tokenExpirationTime = 0;
