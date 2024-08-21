@@ -1,11 +1,53 @@
-const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net';
+import { API_BASE_URL } from './config.js';
+
+let accessToken = null;
+let tokenExpirationTime = 0;
+
+const CLIENT_ID = 'e6415912-782e-4bd9-b6ea-af48c81ae323';
+const CLIENT_SECRET = '137o75y57ug8fm55ubfoxlwjpl0xm25jxj18ne5mser23mbprj5nfncvfnr82utnzx73ij4h449o298370rjwpycppazsfyh2s0l';
+
+async function obterTokenAutenticacao() {
+    try {
+        if (accessToken && Date.now() < tokenExpirationTime) {
+            return accessToken;
+        }
+
+        console.log('Obtendo novo token de autenticação...');
+        const response = await fetch(`${API_BASE_URL}/authentication/v1.0/oauth/token`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'grantType': 'client_credentials',
+                'clientId': CLIENT_ID,
+                'clientSecret': CLIENT_SECRET,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Falha na autenticação: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        accessToken = data.accessToken;
+        tokenExpirationTime = Date.now() + (data.expiresIn * 1000) - 60000; // Expira 1 minuto antes para segurança
+        console.log('Novo token obtido com sucesso');
+        return accessToken;
+    } catch (error) {
+        console.error('Erro ao obter token:', error);
+        throw error;
+    }
+}
 
 async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
     try {
+        const token = await obterTokenAutenticacao();
         const opcoes = {
             method: metodo,
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
         };
 
@@ -13,8 +55,8 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
             opcoes.body = JSON.stringify(corpo);
         }
 
-        console.log(`Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
-        const resposta = await fetch(`${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
+        console.log(`Fazendo requisição para ${API_BASE_URL}${endpoint}`, opcoes);
+        const resposta = await fetch(`${API_BASE_URL}${endpoint}`, opcoes);
         
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
@@ -55,5 +97,6 @@ export async function obterMotivoCancelamento(orderId) {
 }
 
 export async function cancelarPedido(orderId, cancelCodeId) {
+    console.log(`Tentando cancelar pedido ${orderId} com motivo: ${cancelCodeId}`);
     return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
 }
