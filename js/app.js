@@ -224,7 +224,9 @@ function traduzirMetodoPagamento(metodo) {
 window.confirmarPedidoManual = async function(orderId) {
     try {
         const resultado = await confirmarPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
+        if (resultado.fullCode) {
+            atualizarStatusPedido(orderId, resultado.fullCode);
+        }
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
         console.error('Erro ao confirmar pedido:', error);
@@ -235,7 +237,9 @@ window.confirmarPedidoManual = async function(orderId) {
 window.despacharPedidoManual = async function(orderId) {
     try {
         const resultado = await despacharPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'DISPATCHED');
+        if (resultado.fullCode) {
+            atualizarStatusPedido(orderId, resultado.fullCode);
+        }
         alert('Pedido despachado com sucesso!');
     } catch (error) {
         console.error('Erro ao despachar pedido:', error);
@@ -257,7 +261,9 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         
         if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
+            if (resultado.fullCode) {
+                atualizarStatusPedido(orderId, resultado.fullCode);
+            }
             alert('Pedido cancelado com sucesso!');
         } else {
             alert('Cancelamento abortado pelo usuário.');
