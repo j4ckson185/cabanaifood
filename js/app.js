@@ -78,7 +78,7 @@ async function processarPedido(evento) {
 }
 
 function exibirPedido(pedido) {
-    console.log('Exibindo pedido:', pedido);  // Log para depuração
+    console.log('Exibindo pedido:', pedido);
     const pedidosContainer = document.getElementById('pedidos-container');
     if (!pedidosContainer) {
         console.error('Container de pedidos não encontrado!');
