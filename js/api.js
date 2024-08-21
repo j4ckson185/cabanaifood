@@ -8,17 +8,14 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
                 'Content-Type': 'application/json',
             },
         };
-
         if (corpo) {
             opcoes.body = JSON.stringify(corpo);
         }
-
         console.log(`Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
         const resposta = await fetch(`${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
         
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
-
         if (!resposta.ok) {
             let errorMessage = `Erro na API: ${resposta.status} ${resposta.statusText}`;
             try {
@@ -31,12 +28,10 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
             }
             throw new Error(errorMessage);
         }
-
-        // Se a resposta for vazia, não tente interpretar como JSON
-        if (!texto) {
-            return null;
+        // Se a resposta for vazia ou não for um JSON válido, retorne um objeto com status
+        if (!texto || texto.trim() === '') {
+            return { status: resposta.status };
         }
-
         return JSON.parse(texto);
     } catch (error) {
         console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
@@ -57,11 +52,13 @@ export async function obterDetalhesPedido(orderId) {
 }
 
 export async function confirmarPedido(orderId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/confirm`, 'POST');
+    const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/confirm`, 'POST');
+    return { fullCode: 'CONFIRMED', ...resultado };
 }
 
 export async function despacharPedido(orderId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/dispatch`, 'POST');
+    const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/dispatch`, 'POST');
+    return { fullCode: 'DISPATCHED', ...resultado };
 }
 
 export async function obterMotivoCancelamento(orderId) {
@@ -69,5 +66,6 @@ export async function obterMotivoCancelamento(orderId) {
 }
 
 export async function cancelarPedido(orderId, cancelCodeId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
+    const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
+    return { fullCode: 'CANCELLED', ...resultado };
 }
