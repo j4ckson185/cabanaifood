@@ -250,8 +250,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         console.log('Motivo selecionado:', motivoSelecionado);
         
         if (motivoSelecionado) {
-            const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            console.log('Resultado do cancelamento:', resultado);
+            await cancelarPedido(orderId, motivoSelecionado);
             atualizarStatusPedido(orderId, 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
         } else {
@@ -259,7 +258,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         }
     } catch (error) {
         console.error('Erro ao cancelar pedido:', error);
-        alert(`Erro ao cancelar pedido: ${error.message}`);
+        alert('Erro ao cancelar pedido. Por favor, tente novamente.');
     }
 }
 
@@ -271,7 +270,7 @@ async function selecionarMotivoCancelamento(motivos) {
             <div class="modal-content">
                 <h2>Selecione o motivo do cancelamento</h2>
                 <select id="motivoCancelamento">
-                    ${motivos.map(motivo => `<option value="${motivo.cancelCodeId}">${motivo.description}</option>`).join('')}
+                    ${motivos.map(motivo => `<option value="${motivo.code}">${motivo.description}</option>`).join('')}
                 </select>
                 <button id="confirmarCancelamento">Confirmar</button>
                 <button id="cancelarCancelamento">Cancelar</button>
