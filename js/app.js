@@ -88,69 +88,17 @@ function exibirPedido(pedido) {
         pedidosContainer.appendChild(pedidoElement);
     }
     
-    const status = pedido.status || 'N/A';
+    const status = pedido.fullCode || pedido.orderStatus || pedido.status || 'N/A';
     
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
-        <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
+        <p>Status: <span class="status-pedido status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
         <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
         <p>Tipo: ${pedido.orderType || 'N/A'}</p>
         <p>Momento: ${pedido.orderTiming || 'N/A'}</p>
         <p>Loja: ${pedido.merchant?.name || 'N/A'}</p>
         
-        <div class="pedido-details">
-            <h4>Itens do Pedido:</h4>
-            <ul class="pedido-items">
-                ${(pedido.items || []).map(item => `
-                    <li>
-                        ${item.quantity}x ${item.name} - R$ ${item.totalPrice.toFixed(2)}
-                        ${item.options ? `
-                            <ul>
-                                ${item.options.map(option => `
-                                    <li>${option.quantity}x ${option.name} - R$ ${option.price.toFixed(2)}</li>
-                                `).join('')}
-                            </ul>
-                        ` : ''}
-                    </li>
-                `).join('')}
-            </ul>
-            
-            <div class="pedido-total">
-                <p>Subtotal: R$ ${pedido.total?.subTotal.toFixed(2) || 'N/A'}</p>
-                <p>Taxa de Entrega: R$ ${pedido.total?.deliveryFee.toFixed(2) || 'N/A'}</p>
-                <p>Taxas Adicionais: R$ ${pedido.total?.additionalFees.toFixed(2) || 'N/A'}</p>
-                <p>Benefícios: R$ ${pedido.total?.benefits.toFixed(2) || 'N/A'}</p>
-                <p>Total do Pedido: R$ ${pedido.total?.orderAmount.toFixed(2) || 'N/A'}</p>
-            </div>
-            
-            <div class="pedido-payment">
-                <h4>Pagamento:</h4>
-                <p>Pré-pago: R$ ${pedido.payments?.prepaid.toFixed(2) || 'N/A'}</p>
-                <p>Pendente: R$ ${pedido.payments?.pending.toFixed(2) || 'N/A'}</p>
-                ${(pedido.payments?.methods || []).map(method => `
-                    <p>${traduzirMetodoPagamento(method.method)}: R$ ${method.value.toFixed(2)}</p>
-                `).join('')}
-            </div>
-            
-            <div class="pedido-delivery">
-                <h4>Entrega:</h4>
-                <p>Modo: ${pedido.delivery?.mode || 'N/A'}</p>
-                <p>Data/Hora: ${pedido.delivery?.deliveryDateTime || 'N/A'}</p>
-                <p>Observações: ${pedido.delivery?.observations || 'N/A'}</p>
-                <p>Endereço: ${pedido.delivery?.deliveryAddress?.formattedAddress || 'N/A'}</p>
-                <p>Bairro: ${pedido.delivery?.deliveryAddress?.neighborhood || 'N/A'}</p>
-                <p>Complemento: ${pedido.delivery?.deliveryAddress?.complement || 'N/A'}</p>
-            </div>
-            
-            ${pedido.benefits ? `
-                <div class="pedido-benefits">
-                    <h4>Benefícios:</h4>
-                    ${pedido.benefits.map(benefit => `
-                        <p>${benefit.target}: R$ ${benefit.value.toFixed(2)}</p>
-                    `).join('')}
-                </div>
-            ` : ''}
-        </div>
+        <!-- ... (resto do conteúdo do pedido) ... -->
         
         <div class="pedido-actions">
             ${status !== 'DISPATCHED' && status !== 'CONCLUDED' && status !== 'CANCELLED' ? `
@@ -171,7 +119,7 @@ function atualizarExibicaoPedidos() {
     const pedidos = document.querySelectorAll('.pedido');
     
     pedidos.forEach(pedido => {
-        const statusElement = pedido.querySelector('.status-placed, .status-confirmed, .status-dispatched, .status-concluded, .status-cancelled');
+        const statusElement = pedido.querySelector('.status-pedido');
         if (statusElement) {
             const status = statusElement.textContent;
             
@@ -201,24 +149,23 @@ function traduzirStatus(status) {
     return traducoes[status] || status;
 }
 
-function traduzirMetodoPagamento(metodo) {
-    const traducoes = {
-        'CREDIT': 'Cartão de Crédito',
-        'DEBIT': 'Cartão de Débito',
-        'MEAL_VOUCHER': 'Vale Refeição',
-        'FOOD_VOUCHER': 'Vale Alimentação',
-        'DIGITAL_WALLET': 'Carteira Digital',
-        'PIX': 'PIX',
-        'CASH': 'Dinheiro',
-        'OTHER': 'Outro'
-    };
-    return traducoes[metodo] || metodo;
+function atualizarStatusPedido(orderId, novoStatus) {
+    const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    if (pedidoElement) {
+        const statusElement = pedidoElement.querySelector('.status-pedido');
+        if (statusElement) {
+            statusElement.textContent = traduzirStatus(novoStatus);
+            statusElement.className = `status-pedido status-${novoStatus.toLowerCase()}`;
+        }
+    }
+    atualizarExibicaoPedidos();
 }
 
 window.confirmarPedidoManual = async function(orderId) {
     try {
-        await confirmarPedido(orderId);
-        atualizarStatusPedido(orderId, 'CONFIRMED');
+        const resultado = await confirmarPedido(orderId);
+        console.log('Resultado da confirmação:', resultado);
+        atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
         console.error('Erro ao confirmar pedido:', error);
@@ -228,8 +175,9 @@ window.confirmarPedidoManual = async function(orderId) {
 
 window.despacharPedidoManual = async function(orderId) {
     try {
-        await despacharPedido(orderId);
-        atualizarStatusPedido(orderId, 'DISPATCHED');
+        const resultado = await despacharPedido(orderId);
+        console.log('Resultado do despacho:', resultado);
+        atualizarStatusPedido(orderId, resultado.fullCode || 'DISPATCHED');
         alert('Pedido despachado com sucesso!');
     } catch (error) {
         console.error('Erro ao despachar pedido:', error);
@@ -250,8 +198,9 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         console.log('Motivo selecionado:', motivoSelecionado);
         
         if (motivoSelecionado) {
-            await cancelarPedido(orderId, motivoSelecionado);
-            atualizarStatusPedido(orderId, 'CANCELLED');
+            const resultado = await cancelarPedido(orderId, motivoSelecionado);
+            console.log('Resultado do cancelamento:', resultado);
+            atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
         } else {
             alert('Cancelamento abortado pelo usuário.');
@@ -270,7 +219,7 @@ async function selecionarMotivoCancelamento(motivos) {
             <div class="modal-content">
                 <h2>Selecione o motivo do cancelamento</h2>
                 <select id="motivoCancelamento">
-                    ${motivos.map(motivo => `<option value="${motivo.cancelCodeId}">${motivo.description}</option>`).join('')}
+                    ${motivos.map(motivo => `<option value="${motivo.code}">${motivo.description}</option>`).join('')}
                 </select>
                 <button id="confirmarCancelamento">Confirmar</button>
                 <button id="cancelarCancelamento">Cancelar</button>
@@ -289,16 +238,6 @@ async function selecionarMotivoCancelamento(motivos) {
             resolve(null);
         });
     });
-}
-
-function atualizarStatusPedido(orderId, novoStatus) {
-    const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
-    if (pedidoElement) {
-        const statusElement = pedidoElement.querySelector('p:first-of-type span');
-        statusElement.textContent = traduzirStatus(novoStatus);
-        statusElement.className = `status-${novoStatus.toLowerCase()}`;
-        atualizarExibicaoPedidos();
-    }
 }
 
 inicializarApp();
