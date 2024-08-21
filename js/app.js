@@ -92,7 +92,7 @@ function exibirPedido(pedido) {
     
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
-        <p>Status: <span class="status-pedido status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
+        <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
         <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
         <p>Tipo: ${pedido.orderType || 'N/A'}</p>
         <p>Momento: ${pedido.orderTiming || 'N/A'}</p>
@@ -294,11 +294,10 @@ async function selecionarMotivoCancelamento(motivos) {
 function atualizarStatusPedido(orderId, novoStatus) {
     const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
     if (pedidoElement) {
-        const statusElement = pedidoElement.querySelector('.status-pedido');
-        if (statusElement) {
-            statusElement.textContent = traduzirStatus(novoStatus);
-            statusElement.className = `status-pedido status-${novoStatus.toLowerCase()}`;
-        }
+        const statusElement = pedidoElement.querySelector('p:first-of-type span');
+        statusElement.textContent = traduzirStatus(novoStatus);
+        statusElement.className = `status-${novoStatus.toLowerCase()}`;
+        atualizarExibicaoPedidos();
     }
 }
 
