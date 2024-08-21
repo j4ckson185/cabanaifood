@@ -78,13 +78,7 @@ async function processarPedido(evento) {
 }
 
 function exibirPedido(pedido) {
-    console.log('Exibindo pedido:', pedido);
     const pedidosContainer = document.getElementById('pedidos-container');
-    if (!pedidosContainer) {
-        console.error('Container de pedidos não encontrado!');
-        return;
-    }
-
     let pedidoElement = document.querySelector(`[data-order-id="${pedido.id}"]`);
     
     if (!pedidoElement) {
@@ -153,22 +147,9 @@ function traduzirStatus(status) {
     return traducoes[status] || status;
 }
 
-function atualizarStatusPedido(orderId, novoStatus) {
-    const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
-    if (pedidoElement) {
-        const statusElement = pedidoElement.querySelector('.status-pedido');
-        if (statusElement) {
-            statusElement.textContent = traduzirStatus(novoStatus);
-            statusElement.className = `status-pedido status-${novoStatus.toLowerCase()}`;
-        }
-    }
-    atualizarExibicaoPedidos();
-}
-
 window.confirmarPedidoManual = async function(orderId) {
     try {
         const resultado = await confirmarPedido(orderId);
-        console.log('Resultado da confirmação:', resultado);
         atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
@@ -180,7 +161,6 @@ window.confirmarPedidoManual = async function(orderId) {
 window.despacharPedidoManual = async function(orderId) {
     try {
         const resultado = await despacharPedido(orderId);
-        console.log('Resultado do despacho:', resultado);
         atualizarStatusPedido(orderId, resultado.fullCode || 'DISPATCHED');
         alert('Pedido despachado com sucesso!');
     } catch (error) {
@@ -203,7 +183,6 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         
         if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            console.log('Resultado do cancelamento:', resultado);
             atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
         } else {
@@ -213,6 +192,18 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         console.error('Erro ao cancelar pedido:', error);
         alert(`Erro ao cancelar pedido: ${error.message}`);
     }
+}
+
+function atualizarStatusPedido(orderId, novoStatus) {
+    const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    if (pedidoElement) {
+        const statusElement = pedidoElement.querySelector('.status-pedido');
+        if (statusElement) {
+            statusElement.textContent = traduzirStatus(novoStatus);
+            statusElement.className = `status-pedido status-${novoStatus.toLowerCase()}`;
+        }
+    }
+    atualizarExibicaoPedidos();
 }
 
 async function selecionarMotivoCancelamento(motivos) {
