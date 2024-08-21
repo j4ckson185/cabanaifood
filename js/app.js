@@ -68,26 +68,138 @@ async function processarEventos(eventos) {
 async function processarPedido(evento) {
     try {
         const pedido = await obterDetalhesPedido(evento.orderId);
-        exibirPedido(pedido);
+        if (pedido) {
+            currentOrders.push(pedido);
+            exibirPedido(pedido);
+        }
     } catch (error) {
         console.error('Erro ao processar pedido:', error);
     }
 }
 
 function exibirPedido(pedido) {
-    // ... (mantenha a função exibirPedido como está)
+    console.log('Exibindo pedido:', pedido);
+    const pedidosContainer = document.getElementById('pedidos-container');
+    if (!pedidosContainer) {
+        console.error('Container de pedidos não encontrado!');
+        return;
+    }
+    let pedidoElement = document.querySelector(`[data-order-id="${pedido.id}"]`);
+    
+    if (!pedidoElement) {
+        pedidoElement = document.createElement('div');
+        pedidoElement.className = 'pedido';
+        pedidoElement.setAttribute('data-order-id', pedido.id);
+        pedidosContainer.appendChild(pedidoElement);
+    }
+    
+    const status = pedido.status || 'N/A';
+    
+    pedidoElement.innerHTML = `
+        <h3>Pedido #${pedido.displayId || pedido.id}</h3>
+        <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
+        <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
+        <p>Tipo: ${pedido.orderType || 'N/A'}</p>
+        <p>Momento: ${pedido.orderTiming || 'N/A'}</p>
+        <p>Loja: ${pedido.merchant?.name || 'N/A'}</p>
+        
+        <div class="pedido-details">
+            <h4>Itens do Pedido:</h4>
+            <ul class="pedido-items">
+                ${(pedido.items || []).map(item => `
+                    <li>
+                        ${item.quantity}x ${item.name} - R$ ${item.price.toFixed(2)}
+                        ${item.subItems ? `
+                            <ul>
+                                ${item.subItems.map(subItem => `
+                                    <li>${subItem.quantity}x ${subItem.name} - R$ ${subItem.price.toFixed(2)}</li>
+                                `).join('')}
+                            </ul>
+                        ` : ''}
+                    </li>
+                `).join('')}
+            </ul>
+            
+            <div class="pedido-total">
+                <p>Subtotal: R$ ${pedido.subTotal?.toFixed(2) || 'N/A'}</p>
+                <p>Taxa de Entrega: R$ ${pedido.deliveryFee?.toFixed(2) || 'N/A'}</p>
+                <p>Total do Pedido: R$ ${pedido.total?.toFixed(2) || 'N/A'}</p>
+            </div>
+            
+            <div class="pedido-payment">
+                <h4>Pagamento:</h4>
+                <p>Método: ${traduzirMetodoPagamento(pedido.payments?.[0]?.method) || 'N/A'}</p>
+                <p>Valor: R$ ${pedido.payments?.[0]?.value?.toFixed(2) || 'N/A'}</p>
+            </div>
+            
+            <div class="pedido-delivery">
+                <h4>Entrega:</h4>
+                <p>Endereço: ${pedido.delivery?.deliveryAddress?.formattedAddress || 'N/A'}</p>
+                <p>Complemento: ${pedido.delivery?.deliveryAddress?.complement || 'N/A'}</p>
+            </div>
+        </div>
+        
+        <div class="pedido-actions">
+            ${status !== 'DISPATCHED' && status !== 'CONCLUDED' && status !== 'CANCELLED' ? `
+                <button class="btn btn-confirm" onclick="confirmarPedidoManual('${pedido.id}')">Confirmar</button>
+                <button class="btn btn-dispatch" onclick="despacharPedidoManual('${pedido.id}')">Despachar</button>
+            ` : ''}
+            ${status !== 'CONCLUDED' && status !== 'CANCELLED' ? `
+                <button class="btn btn-cancel" onclick="mostrarMotivoCancelamento('${pedido.id}')">Cancelar</button>
+            ` : ''}
+        </div>
+    `;
+    
+    atualizarExibicaoPedidos();
 }
 
 function atualizarExibicaoPedidos() {
-    // ... (mantenha a função atualizarExibicaoPedidos como está)
+    const tabAtiva = document.querySelector('.tab.active').dataset.tab;
+    const pedidos = document.querySelectorAll('.pedido');
+    
+    pedidos.forEach(pedido => {
+        const statusElement = pedido.querySelector('.status-placed, .status-confirmed, .status-dispatched, .status-concluded, .status-cancelled');
+        if (statusElement) {
+            const status = statusElement.textContent;
+            
+            if (tabAtiva === 'preparacao' && (status === 'Recebido' || status === 'Confirmado')) {
+                pedido.style.display = 'block';
+            } else if (tabAtiva === 'enviados' && status === 'Despachado') {
+                pedido.style.display = 'block';
+            } else if (tabAtiva === 'concluidos' && status === 'Concluído') {
+                pedido.style.display = 'block';
+            } else if (tabAtiva === 'cancelados' && status === 'Cancelado') {
+                pedido.style.display = 'block';
+            } else {
+                pedido.style.display = 'none';
+            }
+        }
+    });
 }
 
 function traduzirStatus(status) {
-    // ... (mantenha a função traduzirStatus como está)
+    const traducoes = {
+        'PLACED': 'Recebido',
+        'CONFIRMED': 'Confirmado',
+        'DISPATCHED': 'Despachado',
+        'CONCLUDED': 'Concluído',
+        'CANCELLED': 'Cancelado'
+    };
+    return traducoes[status] || status;
 }
 
 function traduzirMetodoPagamento(metodo) {
-    // ... (mantenha a função traduzirMetodoPagamento como está)
+    const traducoes = {
+        'CREDIT': 'Cartão de Crédito',
+        'DEBIT': 'Cartão de Débito',
+        'MEAL_VOUCHER': 'Vale Refeição',
+        'FOOD_VOUCHER': 'Vale Alimentação',
+        'DIGITAL_WALLET': 'Carteira Digital',
+        'PIX': 'PIX',
+        'CASH': 'Dinheiro',
+        'OTHER': 'Outro'
+    };
+    return traducoes[metodo] || metodo;
 }
 
 window.confirmarPedidoManual = async function(orderId) {
@@ -149,7 +261,30 @@ window.mostrarMotivoCancelamento = async function(orderId) {
 }
 
 async function selecionarMotivoCancelamento(motivos) {
-    // ... (mantenha a função selecionarMotivoCancelamento como está)
+    return new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h2>Selecione o motivo do cancelamento</h2>
+                <select id="motivoCancelamento">
+                    ${motivos.map(motivo => `<option value="${motivo.code}">${motivo.description}</option>`).join('')}
+                </select>
+                <button id="confirmarCancelamento">Confirmar</button>
+                <button id="cancelarCancelamento">Cancelar</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('confirmarCancelamento').addEventListener('click', () => {
+            const motivoSelecionado = document.getElementById('motivoCancelamento').value;
+            document.body.removeChild(modal);
+            resolve(motivoSelecionado);
+        });
+        document.getElementById('cancelarCancelamento').addEventListener('click', () => {
+            document.body.removeChild(modal);
+            resolve(null);
+        });
+    });
 }
 
 function atualizarStatusPedido(orderId, novoStatus) {
