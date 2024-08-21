@@ -101,11 +101,6 @@ function exibirPedido(pedido) {
     const status = pedido.status || 'N/A';
     
     pedidoElement.innerHTML = `
-        <div class="pedido-acoes-topo">
-            <button class="btn btn-confirm-topo" onclick="confirmarPedidoManual('${pedido.id}')">Confirmar</button>
-            <button class="btn btn-dispatch-topo" onclick="despacharPedidoManual('${pedido.id}')">Despachar</button>
-            <button class="btn btn-cancel-topo" onclick="mostrarMotivoCancelamento('${pedido.id}')">Cancelar</button>
-        </div>
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
         <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
         <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
