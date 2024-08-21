@@ -1,0 +1,196 @@
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --background-color: #ecf0f1;
+    --text-color: #34495e;
+    --header-color: #2c3e50;
+    --error-color: #e74c3c;
+    --warning-color: #f39c12;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+header {
+    background-color: var(--header-color);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.logo i {
+    font-size: 2rem;
+    margin-right: 1rem;
+}
+
+nav button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1rem;
+    margin-right: 1rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+nav button:hover, nav button.active {
+    color: var(--primary-color);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-info i {
+    font-size: 1.5rem;
+    margin-right: 0.5rem;
+}
+
+main {
+    padding: 2rem;
+}
+
+.dashboard {
+    background-color: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.order-tabs {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+.tab {
+    background-color: var(--background-color);
+    border: none;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.tab.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#pedidos-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.pedido {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: box-shadow 0.3s ease;
+}
+
+.pedido:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pedido h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.pedido p {
+    margin-bottom: 0.5rem;
+}
+
+.pedido-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn-confirm {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-dispatch {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-cancel {
+    background-color: var(--error-color);
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+.status-placed { color: var(--warning-color); }
+.status-confirmed { color: var(--secondary-color); }
+.status-dispatched { color: var(--primary-color); }
+.status-concluded { color: var(--text-color); }
+.status-cancelled { color: var(--error-color); }
+
+.pedido-details {
+    margin-top: 1rem;
+    border-top: 1px solid #ddd;
+    padding-top: 1rem;
+}
+
+.pedido-details h4 {
+    margin-bottom: 0.5rem;
+}
+
+.pedido-items {
+    list-style-type: none;
+}
+
+.pedido-items li {
+    margin-bottom: 0.5rem;
+}
+
+.pedido-total {
+    font-weight: bold;
+    margin-top: 0.5rem;
+}
+
+.pedido-payment {
+    margin-top: 0.5rem;
+}
+
+.pedido-delivery {
+    margin-top: 0.5rem;
+}
+
+.pedido-benefits {
+    margin-top: 0.5rem;
+}
