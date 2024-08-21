@@ -88,7 +88,7 @@ function exibirPedido(pedido) {
         pedidosContainer.appendChild(pedidoElement);
     }
     
-    const status = pedido.fullCode || pedido.status || 'N/A';
+    const status = pedido.status || 'N/A';
     
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
@@ -217,8 +217,8 @@ function traduzirMetodoPagamento(metodo) {
 
 window.confirmarPedidoManual = async function(orderId) {
     try {
-        const resultado = await confirmarPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
+        await confirmarPedido(orderId);
+        atualizarStatusPedido(orderId, 'CONFIRMED');
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
         console.error('Erro ao confirmar pedido:', error);
@@ -228,8 +228,8 @@ window.confirmarPedidoManual = async function(orderId) {
 
 window.despacharPedidoManual = async function(orderId) {
     try {
-        const resultado = await despacharPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'DISPATCHED');
+        await despacharPedido(orderId);
+        atualizarStatusPedido(orderId, 'DISPATCHED');
         alert('Pedido despachado com sucesso!');
     } catch (error) {
         console.error('Erro ao despachar pedido:', error);
@@ -251,7 +251,8 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         
         if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
+            console.log('Resultado do cancelamento:', resultado);
+            atualizarStatusPedido(orderId, 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
         } else {
             alert('Cancelamento abortado pelo usuário.');
@@ -270,7 +271,7 @@ async function selecionarMotivoCancelamento(motivos) {
             <div class="modal-content">
                 <h2>Selecione o motivo do cancelamento</h2>
                 <select id="motivoCancelamento">
-                    ${motivos.map(motivo => `<option value="${motivo.code}">${motivo.description}</option>`).join('')}
+                    ${motivos.map(motivo => `<option value="${motivo.cancelCodeId}">${motivo.description}</option>`).join('')}
                 </select>
                 <button id="confirmarCancelamento">Confirmar</button>
                 <button id="cancelarCancelamento">Cancelar</button>
