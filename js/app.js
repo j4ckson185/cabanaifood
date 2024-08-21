@@ -78,7 +78,13 @@ async function processarPedido(evento) {
 }
 
 function exibirPedido(pedido) {
+    console.log('Exibindo pedido:', pedido);
     const pedidosContainer = document.getElementById('pedidos-container');
+    if (!pedidosContainer) {
+        console.error('Container de pedidos não encontrado!');
+        return;
+    }
+
     let pedidoElement = document.querySelector(`[data-order-id="${pedido.id}"]`);
     
     if (!pedidoElement) {
@@ -97,8 +103,6 @@ function exibirPedido(pedido) {
         <p>Tipo: ${pedido.orderType || 'N/A'}</p>
         <p>Momento: ${pedido.orderTiming || 'N/A'}</p>
         <p>Loja: ${pedido.merchant?.name || 'N/A'}</p>
-        
-        <!-- ... (resto do conteúdo do pedido) ... -->
         
         <div class="pedido-actions">
             ${status !== 'DISPATCHED' && status !== 'CONCLUDED' && status !== 'CANCELLED' ? `
