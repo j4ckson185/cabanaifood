@@ -88,7 +88,7 @@ function exibirPedido(pedido) {
         pedidosContainer.appendChild(pedidoElement);
     }
     
-    const status = pedido.status || 'N/A';
+    const status = pedido.fullCode || pedido.status || 'N/A';
     
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
@@ -217,8 +217,8 @@ function traduzirMetodoPagamento(metodo) {
 
 window.confirmarPedidoManual = async function(orderId) {
     try {
-        await confirmarPedido(orderId);
-        atualizarStatusPedido(orderId, 'CONFIRMED');
+        const resultado = await confirmarPedido(orderId);
+        atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
         console.error('Erro ao confirmar pedido:', error);
@@ -228,8 +228,8 @@ window.confirmarPedidoManual = async function(orderId) {
 
 window.despacharPedidoManual = async function(orderId) {
     try {
-        await despacharPedido(orderId);
-        atualizarStatusPedido(orderId, 'DISPATCHED');
+        const resultado = await despacharPedido(orderId);
+        atualizarStatusPedido(orderId, resultado.fullCode || 'DISPATCHED');
         alert('Pedido despachado com sucesso!');
     } catch (error) {
         console.error('Erro ao despachar pedido:', error);
@@ -252,7 +252,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
             console.log('Resultado do cancelamento:', resultado);
-            atualizarStatusPedido(orderId, 'CANCELLED');
+            atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
         } else {
             alert('Cancelamento abortado pelo usuário.');
