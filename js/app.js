@@ -250,8 +250,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         console.log('Motivo selecionado:', motivoSelecionado);
         
         if (motivoSelecionado) {
-            const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            console.log('Resultado do cancelamento:', resultado);
+            await cancelarPedido(orderId, motivoSelecionado);
             atualizarStatusPedido(orderId, 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
         } else {
@@ -295,10 +294,11 @@ async function selecionarMotivoCancelamento(motivos) {
 function atualizarStatusPedido(orderId, novoStatus) {
     const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
     if (pedidoElement) {
-        const statusElement = pedidoElement.querySelector('p:first-of-type span');
-        statusElement.textContent = traduzirStatus(novoStatus);
-        statusElement.className = `status-${novoStatus.toLowerCase()}`;
-        atualizarExibicaoPedidos();
+        const statusElement = pedidoElement.querySelector('.status-pedido');
+        if (statusElement) {
+            statusElement.textContent = traduzirStatus(novoStatus);
+            statusElement.className = `status-pedido status-${novoStatus.toLowerCase()}`;
+        }
     }
 }
 
