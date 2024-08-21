@@ -1,5 +1,3 @@
-api js ifood
-
 const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net';
 
 async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
