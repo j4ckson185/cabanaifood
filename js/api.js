@@ -64,6 +64,5 @@ export async function obterMotivoCancelamento(orderId) {
 }
 
 export async function cancelarPedido(orderId, cancelCodeId) {
-    const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
-    return { fullCode: 'CANCELLED', ...resultado };
+    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
 }
