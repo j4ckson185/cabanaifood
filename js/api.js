@@ -53,25 +53,11 @@ export async function obterDetalhesPedido(orderId) {
 }
 
 export async function confirmarPedido(orderId) {
-    try {
-        const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/confirm`, 'POST');
-        console.log('Pedido confirmado com sucesso:', resultado);
-        return resultado;
-    } catch (error) {
-        console.error('Erro ao confirmar pedido:', error);
-        throw error;
-    }
+    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/confirm`, 'POST');
 }
 
 export async function despacharPedido(orderId) {
-    try {
-        const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/dispatch`, 'POST');
-        console.log('Pedido despachado com sucesso:', resultado);
-        return resultado;
-    } catch (error) {
-        console.error('Erro ao despachar pedido:', error);
-        throw error;
-    }
+    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/dispatch`, 'POST');
 }
 
 export async function obterMotivoCancelamento(orderId) {
@@ -79,12 +65,5 @@ export async function obterMotivoCancelamento(orderId) {
 }
 
 export async function cancelarPedido(orderId, cancelCodeId) {
-    try {
-        const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
-        console.log('Pedido cancelado com sucesso:', resultado);
-        return resultado;
-    } catch (error) {
-        console.error('Erro ao cancelar pedido:', error);
-        throw error;
-    }
+    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
 }
