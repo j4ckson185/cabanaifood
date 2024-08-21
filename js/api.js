@@ -17,23 +17,20 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
 
+        if (!resposta.ok) {
+            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}\nDetalhes: ${texto}`);
+        }
+
         if (!texto || texto.trim() === '') {
             return { status: resposta.status, message: 'Resposta vazia do servidor' };
         }
 
-        let dados;
         try {
-            dados = JSON.parse(texto);
+            return JSON.parse(texto);
         } catch (parseError) {
             console.error('Erro ao analisar resposta JSON:', parseError);
-            return { status: resposta.status, message: 'Resposta inválida do servidor' };
+            return { status: resposta.status, message: 'Resposta inválida do servidor', data: texto };
         }
-
-        if (!resposta.ok) {
-            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}`);
-        }
-
-        return dados;
     } catch (error) {
         console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
         throw error;
