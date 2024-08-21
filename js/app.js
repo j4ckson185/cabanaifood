@@ -218,8 +218,13 @@ function traduzirMetodoPagamento(metodo) {
 window.confirmarPedidoManual = async function(orderId) {
     try {
         const resultado = await confirmarPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
-        alert('Pedido confirmado com sucesso!');
+        console.log('Resultado da confirmação:', resultado);
+        if (resultado && resultado.fullCode) {
+            atualizarStatusPedido(orderId, resultado.fullCode);
+            alert('Pedido confirmado com sucesso!');
+        } else {
+            throw new Error('Resposta inválida da API');
+        }
     } catch (error) {
         console.error('Erro ao confirmar pedido:', error);
         alert(`Erro ao confirmar pedido: ${error.message}`);
@@ -229,8 +234,13 @@ window.confirmarPedidoManual = async function(orderId) {
 window.despacharPedidoManual = async function(orderId) {
     try {
         const resultado = await despacharPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'DISPATCHED');
-        alert('Pedido despachado com sucesso!');
+        console.log('Resultado do despacho:', resultado);
+        if (resultado && resultado.fullCode) {
+            atualizarStatusPedido(orderId, resultado.fullCode);
+            alert('Pedido despachado com sucesso!');
+        } else {
+            throw new Error('Resposta inválida da API');
+        }
     } catch (error) {
         console.error('Erro ao despachar pedido:', error);
         alert(`Erro ao despachar pedido: ${error.message}`);
@@ -240,6 +250,7 @@ window.despacharPedidoManual = async function(orderId) {
 window.mostrarMotivoCancelamento = async function(orderId) {
     try {
         const motivos = await obterMotivoCancelamento(orderId);
+        console.log('Motivos de cancelamento:', motivos);
         
         if (!motivos || motivos.length === 0) {
             throw new Error('Nenhum motivo de cancelamento disponível');
@@ -247,10 +258,15 @@ window.mostrarMotivoCancelamento = async function(orderId) {
 
         const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
         
-        if (motivoSelecionado) {
+if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
-            alert('Pedido cancelado com sucesso!');
+            console.log('Resultado do cancelamento:', resultado);
+            if (resultado && resultado.fullCode) {
+                atualizarStatusPedido(orderId, resultado.fullCode);
+                alert('Pedido cancelado com sucesso!');
+            } else {
+                throw new Error('Resposta inválida da API');
+            }
         } else {
             alert('Cancelamento abortado pelo usuário.');
         }
