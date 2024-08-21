@@ -16,23 +16,25 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
         
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
-        if (!resposta.ok) {
-            let errorMessage = `Erro na API: ${resposta.status} ${resposta.statusText}`;
-            try {
-                const errorData = texto ? JSON.parse(texto) : null;
-                if (errorData && errorData.error) {
-                    errorMessage += `\nDetalhes: ${errorData.error}`;
-                }
-            } catch (parseError) {
-                console.error('Erro ao tentar analisar a mensagem de erro:', parseError);
-            }
-            throw new Error(errorMessage);
-        }
-        // Se a resposta for vazia ou não for um JSON válido, retorne um objeto com status
+
+        // Tratamento específico para respostas vazias
         if (!texto || texto.trim() === '') {
-            return { status: resposta.status };
+            return { status: resposta.status, message: 'Resposta vazia do servidor' };
         }
-        return JSON.parse(texto);
+
+        let dados;
+        try {
+            dados = JSON.parse(texto);
+        } catch (parseError) {
+            console.error('Erro ao analisar resposta JSON:', parseError);
+            return { status: resposta.status, message: 'Resposta inválida do servidor' };
+        }
+
+        if (!resposta.ok) {
+            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}`);
+        }
+
+        return dados;
     } catch (error) {
         console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
         throw error;
