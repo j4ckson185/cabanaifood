@@ -96,7 +96,6 @@ export async function obterMotivoCancelamento(orderId) {
     return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/cancellationReasons`);
 }
 
-export async function cancelarPedido(orderId, cancelCodeId) {
-    console.log(`Tentando cancelar pedido ${orderId} com motivo: ${cancelCodeId}`);
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
+export async function cancelarPedido(orderId, motivoCancelamento) {
+    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: motivoCancelamento });
 }
