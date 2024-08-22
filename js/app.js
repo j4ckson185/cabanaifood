@@ -5,6 +5,7 @@ let intervalosAtualizacao = {};
 let currentOrders = [];
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM carregado, inicializando app...');
     inicializarApp();
     inicializarTabs();
 });
@@ -21,6 +22,7 @@ async function inicializarApp() {
 }
 
 function inicializarTabs() {
+    console.log('Inicializando tabs...');
     const tabs = document.querySelectorAll('.tab');
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
@@ -56,6 +58,7 @@ async function fazerPolling() {
 }
 
 async function processarEventos(eventos) {
+    console.log('Processando eventos:', eventos);
     for (const evento of eventos) {
         if (evento.code && evento.orderId && !pedidosProcessados.has(evento.orderId)) {
             pedidosProcessados.add(evento.orderId);
@@ -66,9 +69,10 @@ async function processarEventos(eventos) {
 
 async function processarPedido(evento) {
     try {
+        console.log('Processando pedido:', evento);
         const pedido = await obterDetalhesPedido(evento.orderId);
         if (pedido) {
-            console.log('Pedido processado:', pedido);
+            console.log('Detalhes do pedido obtidos:', pedido);
             const index = currentOrders.findIndex(p => p.id === pedido.id);
             if (index !== -1) {
                 currentOrders[index] = pedido;
@@ -103,7 +107,6 @@ function exibirPedido(pedido) {
     
     const status = pedido.status || 'N/A';
     
-    // Função auxiliar para formatar valores numéricos
     const formatarValor = (valor) => {
         if (typeof valor === 'number') {
             return valor.toFixed(2);
@@ -173,8 +176,10 @@ function exibirPedido(pedido) {
     
     atualizarExibicaoPedidos();
 }
+
 function atualizarExibicaoPedidos() {
-    const tabAtiva = document.querySelector('.tab.active').dataset.tab;
+    console.log('Atualizando exibição de pedidos...');
+    const tabAtiva = document.querySelector('.tab.active')?.dataset.tab;
     const pedidos = document.querySelectorAll('.pedido');
     
     pedidos.forEach(pedido => {
@@ -229,28 +234,31 @@ function traduzirMetodoPagamento(metodo) {
 
 window.confirmarPedidoManual = async function(orderId) {
     try {
+        console.log('Confirmando pedido:', orderId);
         const resultado = await confirmarPedido(orderId);
         atualizarStatusPedido(orderId, resultado.status || 'CONFIRMED');
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
         console.error('Erro ao confirmar pedido:', error);
-        alert('Pedido confirmado com sucesso.');
+        alert('Erro ao confirmar pedido. Por favor, tente novamente.');
     }
 }
 
 window.despacharPedidoManual = async function(orderId) {
     try {
+        console.log('Despachando pedido:', orderId);
         const resultado = await despacharPedido(orderId);
         atualizarStatusPedido(orderId, resultado.status || 'DISPATCHED');
         alert('Pedido despachado com sucesso!');
     } catch (error) {
         console.error('Erro ao despachar pedido:', error);
-        alert('Pedido despachado com sucesso!');
+        alert('Erro ao despachar pedido. Por favor, tente novamente.');
     }
 }
 
 window.mostrarMotivoCancelamento = async function(orderId) {
     try {
+        console.log('Obtendo motivos de cancelamento para o pedido:', orderId);
         const motivos = await obterMotivoCancelamento(orderId);
         console.log('Motivos de cancelamento:', motivos);
         
@@ -261,6 +269,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         console.log('Motivo selecionado:', motivoSelecionado);
         
         if (motivoSelecionado) {
+            console.log('Cancelando pedido:', orderId);
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
             atualizarStatusPedido(orderId, resultado.status || 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
@@ -269,7 +278,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         }
     } catch (error) {
         console.error('Erro ao cancelar pedido:', error);
-        alert(`Pedido cancelado com sucesso!`);
+        alert(`Erro ao cancelar pedido: ${error.message}`);
     }
 }
 
@@ -301,6 +310,7 @@ async function selecionarMotivoCancelamento(motivos) {
 }
 
 function atualizarStatusPedido(orderId, novoStatus) {
+    console.log(`Atualizando status do pedido ${orderId} para ${novoStatus}`);
     const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
     if (pedidoElement) {
         const statusElement = pedidoElement.querySelector('p:first-of-type span');
@@ -314,10 +324,13 @@ function atualizarStatusPedido(orderId, novoStatus) {
             statusIfoodElement.className = `status-ifood status-${novoStatus.toLowerCase()}`;
         }
         atualizarExibicaoPedidos();
+    } else {
+        console.error(`Elemento do pedido ${orderId} não encontrado`);
     }
 }
 
 function iniciarAtualizacaoStatusTempoReal(orderId) {
+    console.log(`Iniciando atualização em tempo real para o pedido ${orderId}`);
     if (intervalosAtualizacao[orderId]) {
         clearInterval(intervalosAtualizacao[orderId]);
     }
@@ -326,10 +339,12 @@ function iniciarAtualizacaoStatusTempoReal(orderId) {
         try {
             const pedidoAtualizado = await obterDetalhesPedido(orderId);
             if (pedidoAtualizado && pedidoAtualizado.status) {
+                console.log(`Status atualizado do pedido ${orderId}:`, pedidoAtualizado.status);
                 atualizarStatusPedido(orderId, pedidoAtualizado.status);
                 
                 // Se o pedido estiver em um estado final, pare a atualização
                 if (['CONCLUDED', 'CANCELLED', 'DELIVERED'].includes(pedidoAtualizado.status)) {
+                    console.log(`Parando atualização em tempo real para o pedido ${orderId}`);
                     clearInterval(intervalosAtualizacao[orderId]);
                     delete intervalosAtualizacao[orderId];
                 }
@@ -344,4 +359,30 @@ function iniciarAtualizacaoStatusTempoReal(orderId) {
     intervalosAtualizacao[orderId] = setInterval(atualizarStatus, 30000);
 }
 
+// Função para exibir todos os pedidos atuais
+function exibirTodosPedidos() {
+    console.log('Exibindo todos os pedidos atuais');
+    currentOrders.forEach(pedido => {
+        exibirPedido(pedido);
+    });
+}
+
+// Função para limpar todos os pedidos exibidos
+function limparPedidosExibidos() {
+    console.log('Limpando todos os pedidos exibidos');
+    const pedidosContainer = document.getElementById('pedidos-container');
+    if (pedidosContainer) {
+        pedidosContainer.innerHTML = '';
+    }
+}
+
+// Adicione esta linha no final do arquivo para iniciar o aplicativo
 inicializarApp();
+
+// Adicione estas linhas para debug
+console.log('Script carregado');
+window.debug = {
+    currentOrders,
+    exibirTodosPedidos,
+    limparPedidosExibidos
+};
