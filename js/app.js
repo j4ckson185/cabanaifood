@@ -304,13 +304,30 @@ async function selecionarMotivoCancelamento(motivos) {
 }
 
 function atualizarStatusPedido(orderId, novoStatus) {
-    const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
-    if (pedidoElement) {
-        const statusElement = pedidoElement.querySelector('p:first-of-type span');
-        statusElement.textContent = traduzirStatus(novoStatus);
-        statusElement.className = `status-${novoStatus.toLowerCase()}`;
-        atualizarExibicaoPedidos();
+  console.log(`Atualizando status do pedido ${orderId} para ${novoStatus}`);
+  const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
+  if (pedidoElement) {
+    const statusElement = pedidoElement.querySelector('p span');
+    if (statusElement) {
+      const statusTraduzido = traduzirStatus(novoStatus);
+      console.log(`Status traduzido: ${statusTraduzido}`);
+      statusElement.textContent = statusTraduzido;
+      statusElement.className = `status-${novoStatus.toLowerCase()}`;
+      
+      // Atualiza o status no objeto do pedido
+      const pedidoIndex = currentOrders.findIndex(p => p.id === orderId);
+      if (pedidoIndex !== -1) {
+        currentOrders[pedidoIndex].status = novoStatus;
+        console.log(`Status atualizado no objeto do pedido: ${novoStatus}`);
+      }
+      
+      atualizarExibicaoPedidos();
+    } else {
+      console.error('Elemento de status não encontrado para o pedido:', orderId);
     }
+  } else {
+    console.error('Elemento do pedido não encontrado:', orderId);
+  }
 }
 
 inicializarApp();
