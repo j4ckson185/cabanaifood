@@ -222,14 +222,20 @@ function traduzirMetodoPagamento(metodo) {
 }
 
 window.confirmarPedidoManual = async function(orderId) {
-    try {
-        const resultado = await confirmarPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
-        alert('Pedido confirmado com sucesso!');
-    } catch (error) {
-        console.error('Erro ao confirmar pedido:', error);
-        alert('Erro ao confirmar pedido. Por favor, tente novamente.');
+  try {
+    const resultado = await confirmarPedido(orderId);
+    console.log('Resultado da confirmação:', resultado);
+    if (resultado) {
+      const novoStatus = resultado.fullCode || resultado.status || 'CONFIRMED';
+      atualizarStatusPedido(orderId, novoStatus);
+      alert('Pedido confirmado com sucesso!');
+    } else {
+      throw new Error('Resposta inválida ao confirmar pedido');
     }
+  } catch (error) {
+    console.error('Erro ao confirmar pedido:', error);
+    alert(`Erro ao confirmar pedido: ${error.message}`);
+  }
 }
 
 window.despacharPedidoManual = async function(orderId) {
