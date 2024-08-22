@@ -248,8 +248,10 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         if (!motivos || motivos.length === 0) {
             throw new Error('Nenhum motivo de cancelamento disponível');
         }
-       const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
+
+        const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
         console.log('Motivo selecionado:', motivoSelecionado);
+
         
         if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
