@@ -1,38 +1,31 @@
-const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net';
+const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net/proxyRequest';
 
 async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
     try {
+        console.log(`Fazendo requisição para ${endpoint}`);
         const opcoes = {
             method: metodo,
             headers: {
                 'Content-Type': 'application/json',
             },
         };
-
         if (corpo) {
             opcoes.body = JSON.stringify(corpo);
         }
-
-        console.log(`Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
-        const resposta = await fetch(`${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
+        const resposta = await fetch(`${API_BASE_URL}${endpoint}`, opcoes);
         
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
 
         if (!resposta.ok) {
-            let errorMessage = `Erro na API: ${resposta.status} ${resposta.statusText}`;
-            try {
-                const errorData = JSON.parse(texto);
-                if (errorData.error) {
-                    errorMessage += `\nDetalhes: ${errorData.error}`;
-                }
-            } catch (parseError) {
-                console.error('Erro ao tentar analisar a mensagem de erro:', parseError);
-            }
-            throw new Error(errorMessage);
+            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}\nDetalhes: ${texto}`);
         }
 
-        return texto ? JSON.parse(texto) : null;
+        if (!texto) {
+            return null;
+        }
+
+        return JSON.parse(texto);
     } catch (error) {
         console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
         throw error;
@@ -40,7 +33,12 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
 }
 
 export async function polling() {
-    return fazerRequisicaoAPI('/events/v1.0/events:polling');
+    try {
+        return await fazerRequisicaoAPI('/events/v1.0/events:polling');
+    } catch (error) {
+        console.error('Erro no polling:', error);
+        return null;
+    }
 }
 
 export async function acknowledgeEventos(eventIds) {
