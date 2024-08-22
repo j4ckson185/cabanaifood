@@ -69,9 +69,7 @@ async function processarPedido(evento) {
     try {
         const pedido = await obterDetalhesPedido(evento.orderId);
         exibirPedido(pedido);
-        iniciarAtualizacaoStatusTempo
-
-Real(pedido.id);
+        iniciarAtualizacaoStatusTempoReal(pedido.id);
     } catch (error) {
         console.error('Erro ao processar pedido:', error);
     }
