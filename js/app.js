@@ -2,6 +2,7 @@ import { polling, acknowledgeEventos, obterDetalhesPedido, confirmarPedido, desp
 
 const pedidosProcessados = new Set();
 let intervalosAtualizacao = {};
+let currentOrders = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     inicializarApp();
@@ -68,8 +69,16 @@ async function processarEventos(eventos) {
 async function processarPedido(evento) {
     try {
         const pedido = await obterDetalhesPedido(evento.orderId);
-        exibirPedido(pedido);
-        iniciarAtualizacaoStatusTempoReal(pedido.id);
+        if (pedido) {
+            const index = currentOrders.findIndex(p => p.id === pedido.id);
+            if (index !== -1) {
+                currentOrders[index] = pedido;
+            } else {
+                currentOrders.push(pedido);
+            }
+            exibirPedido(pedido);
+            iniciarAtualizacaoStatusTempoReal(pedido.id);
+        }
     } catch (error) {
         console.error('Erro ao processar pedido:', error);
     }
@@ -91,7 +100,7 @@ function exibirPedido(pedido) {
         pedidosContainer.appendChild(pedidoElement);
     }
     
-    const status = pedido.fullCode || pedido.status || 'N/A';
+    const status = pedido.status || 'N/A';
     
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
@@ -107,11 +116,11 @@ function exibirPedido(pedido) {
             <ul class="pedido-items">
                 ${(pedido.items || []).map(item => `
                     <li>
-                        ${item.quantity}x ${item.name} - R$ ${item.totalPrice.toFixed(2)}
-                        ${item.options ? `
+                        ${item.quantity}x ${item.name} - R$ ${(item.price * item.quantity).toFixed(2)}
+                        ${item.subItems ? `
                             <ul>
-                                ${item.options.map(option => `
-                                    <li>${option.quantity}x ${option.name} - R$ ${option.price.toFixed(2)}</li>
+                                ${item.subItems.map(subItem => `
+                                    <li>${subItem.quantity}x ${subItem.name} - R$ ${subItem.price.toFixed(2)}</li>
                                 `).join('')}
                             </ul>
                         ` : ''}
@@ -120,40 +129,22 @@ function exibirPedido(pedido) {
             </ul>
             
             <div class="pedido-total">
-                <p>Subtotal: R$ ${pedido.total?.subTotal.toFixed(2) || 'N/A'}</p>
-                <p>Taxa de Entrega: R$ ${pedido.total?.deliveryFee.toFixed(2) || 'N/A'}</p>
-                <p>Taxas Adicionais: R$ ${pedido.total?.additionalFees.toFixed(2) || 'N/A'}</p>
-                <p>Benefícios: R$ ${pedido.total?.benefits.toFixed(2) || 'N/A'}</p>
-                <p>Total do Pedido: R$ ${pedido.total?.orderAmount.toFixed(2) || 'N/A'}</p>
+                <p>Subtotal: R$ ${pedido.subTotal?.toFixed(2) || 'N/A'}</p>
+                <p>Taxa de Entrega: R$ ${pedido.deliveryFee?.toFixed(2) || 'N/A'}</p>
+                <p>Total do Pedido: R$ ${pedido.total?.toFixed(2) || 'N/A'}</p>
             </div>
             
             <div class="pedido-payment">
                 <h4>Pagamento:</h4>
-                <p>Pré-pago: R$ ${pedido.payments?.prepaid.toFixed(2) || 'N/A'}</p>
-                <p>Pendente: R$ ${pedido.payments?.pending.toFixed(2) || 'N/A'}</p>
-                ${(pedido.payments?.methods || []).map(method => `
-                    <p>${traduzirMetodoPagamento(method.method)}: R$ ${method.value.toFixed(2)}</p>
-                `).join('')}
+                <p>Método: ${traduzirMetodoPagamento(pedido.payments?.[0]?.method) || 'N/A'}</p>
+                <p>Valor: R$ ${pedido.payments?.[0]?.value?.toFixed(2) || 'N/A'}</p>
             </div>
             
             <div class="pedido-delivery">
                 <h4>Entrega:</h4>
-                <p>Modo: ${pedido.delivery?.mode || 'N/A'}</p>
-                <p>Data/Hora: ${pedido.delivery?.deliveryDateTime || 'N/A'}</p>
-                <p>Observações: ${pedido.delivery?.observations || 'N/A'}</p>
                 <p>Endereço: ${pedido.delivery?.deliveryAddress?.formattedAddress || 'N/A'}</p>
-                <p>Bairro: ${pedido.delivery?.deliveryAddress?.neighborhood || 'N/A'}</p>
                 <p>Complemento: ${pedido.delivery?.deliveryAddress?.complement || 'N/A'}</p>
             </div>
-            
-            ${pedido.benefits ? `
-                <div class="pedido-benefits">
-                    <h4>Benefícios:</h4>
-                    ${pedido.benefits.map(benefit => `
-                        <p>${benefit.target}: R$ ${benefit.value.toFixed(2)}</p>
-                    `).join('')}
-                </div>
-            ` : ''}
         </div>
         
         <div class="pedido-actions">
@@ -227,7 +218,7 @@ function traduzirMetodoPagamento(metodo) {
 window.confirmarPedidoManual = async function(orderId) {
     try {
         const resultado = await confirmarPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'CONFIRMED');
+        atualizarStatusPedido(orderId, resultado.status || 'CONFIRMED');
         alert('Pedido confirmado com sucesso!');
     } catch (error) {
         console.error('Erro ao confirmar pedido:', error);
@@ -238,7 +229,7 @@ window.confirmarPedidoManual = async function(orderId) {
 window.despacharPedidoManual = async function(orderId) {
     try {
         const resultado = await despacharPedido(orderId);
-        atualizarStatusPedido(orderId, resultado.fullCode || 'DISPATCHED');
+        atualizarStatusPedido(orderId, resultado.status || 'DISPATCHED');
         alert('Pedido despachado com sucesso!');
     } catch (error) {
         console.error('Erro ao despachar pedido:', error);
@@ -259,7 +250,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         
         if (motivoSelecionado) {
             const resultado = await cancelarPedido(orderId, motivoSelecionado);
-            atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
+            atualizarStatusPedido(orderId, resultado.status || 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
         } else {
             alert('Cancelamento abortado pelo usuário.');
@@ -278,7 +269,7 @@ async function selecionarMotivoCancelamento(motivos) {
             <div class="modal-content">
                 <h2>Selecione o motivo do cancelamento</h2>
                 <select id="motivoCancelamento">
-                    ${motivos.map(motivo => `<option value="${motivo.cancelCodeId}">${motivo.description}</option>`).join('')}
+                    ${motivos.map(motivo => `<option value="${motivo.code}">${motivo.description}</option>`).join('')}
                 </select>
                 <button id="confirmarCancelamento">Confirmar</button>
                 <button id="cancelarCancelamento">Cancelar</button>
@@ -301,8 +292,15 @@ function atualizarStatusPedido(orderId, novoStatus) {
     const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
     if (pedidoElement) {
         const statusElement = pedidoElement.querySelector('p:first-of-type span');
-        statusElement.textContent = traduzirStatus(novoStatus);
-        statusElement.className = `status-${novoStatus.toLowerCase()}`;
+        if (statusElement) {
+            statusElement.textContent = traduzirStatus(novoStatus);
+            statusElement.className = `status-${novoStatus.toLowerCase()}`;
+        }
+        const statusIfoodElement = pedidoElement.querySelector('.status-ifood');
+        if (statusIfoodElement) {
+            statusIfoodElement.textContent = traduzirStatus(novoStatus);
+            statusIfoodElement.className = `status-ifood status-${novoStatus.toLowerCase()}`;
+        }
         atualizarExibicaoPedidos();
     }
 }
@@ -315,19 +313,14 @@ function iniciarAtualizacaoStatusTempoReal(orderId) {
     const atualizarStatus = async () => {
         try {
             const pedidoAtualizado = await obterDetalhesPedido(orderId);
-            const novoStatus = pedidoAtualizado.status;
-            const statusElement = document.querySelector(`.status-ifood[data-order-id="${orderId}"]`);
-            if (statusElement && novoStatus) {
-                const statusTraduzido = traduzirStatus(novoStatus);
-                statusElement.textContent = statusTraduzido;
-                statusElement.className = `status-ifood status-${novoStatus.toLowerCase()}`;
-            }
-            atualizarExibicaoPedidos();
-
-            // Se o pedido estiver em um estado final, pare a atualização
-            if (['CONCLUDED', 'CANCELLED', 'DELIVERED'].includes(novoStatus)) {
-                clearInterval(intervalosAtualizacao[orderId]);
-                delete intervalosAtualizacao[orderId];
+            if (pedidoAtualizado && pedidoAtualizado.status) {
+                atualizarStatusPedido(orderId, pedidoAtualizado.status);
+                
+                // Se o pedido estiver em um estado final, pare a atualização
+                if (['CONCLUDED', 'CANCELLED', 'DELIVERED'].includes(pedidoAtualizado.status)) {
+                    clearInterval(intervalosAtualizacao[orderId]);
+                    delete intervalosAtualizacao[orderId];
+                }
             }
         } catch (error) {
             console.error(`Erro ao atualizar status do pedido ${orderId}:`, error);
