@@ -1,6 +1,7 @@
 import { polling, acknowledgeEventos, obterDetalhesPedido, confirmarPedido, despacharPedido, obterMotivoCancelamento, cancelarPedido } from './api.js';
 
 const pedidosProcessados = new Set();
+let intervalosAtualizacao = {};
 
 document.addEventListener('DOMContentLoaded', () => {
     inicializarApp();
@@ -34,16 +35,12 @@ async function fazerPolling() {
         console.log('Iniciando polling...');
         const eventos = await polling();
         console.log('Eventos recebidos em fazerPolling:', eventos);
-
         if (eventos === null || !Array.isArray(eventos) || eventos.length === 0) {
             console.log('Nenhum evento novo para processar');
             return;
         }
-
         await processarEventos(eventos);
-
         const eventIds = eventos.map(evento => evento.id).filter(id => id);
-
         if (eventIds.length > 0) {
             try {
                 await acknowledgeEventos(eventIds);
@@ -72,6 +69,9 @@ async function processarPedido(evento) {
     try {
         const pedido = await obterDetalhesPedido(evento.orderId);
         exibirPedido(pedido);
+        iniciarAtualizacaoStatusTempo
+
+Real(pedido.id);
     } catch (error) {
         console.error('Erro ao processar pedido:', error);
     }
@@ -84,7 +84,6 @@ function exibirPedido(pedido) {
         console.error('Container de pedidos não encontrado!');
         return;
     }
-
     let pedidoElement = document.querySelector(`[data-order-id="${pedido.id}"]`);
     
     if (!pedidoElement) {
@@ -99,6 +98,7 @@ function exibirPedido(pedido) {
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
         <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
+        <p>Status iFood: <span class="status-ifood" data-order-id="${pedido.id}">Atualizando...</span></p>
         <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
         <p>Tipo: ${pedido.orderType || 'N/A'}</p>
         <p>Momento: ${pedido.orderTiming || 'N/A'}</p>
@@ -177,15 +177,15 @@ function atualizarExibicaoPedidos() {
     const pedidos = document.querySelectorAll('.pedido');
     
     pedidos.forEach(pedido => {
-        const statusElement = pedido.querySelector('.status-placed, .status-confirmed, .status-dispatched, .status-concluded, .status-cancelled');
+        const statusElement = pedido.querySelector('.status-ifood');
         if (statusElement) {
             const status = statusElement.textContent;
             
-            if (tabAtiva === 'preparacao' && (status === 'Recebido' || status === 'Confirmado')) {
+            if (tabAtiva === 'preparacao' && ['Recebido', 'Confirmado', 'Integrado', 'Preparado'].includes(status)) {
                 pedido.style.display = 'block';
-            } else if (tabAtiva === 'enviados' && status === 'Despachado') {
+            } else if (tabAtiva === 'enviados' && ['Despachado', 'Pronto para Retirada', 'Retirado'].includes(status)) {
                 pedido.style.display = 'block';
-            } else if (tabAtiva === 'concluidos' && status === 'Concluído') {
+            } else if (tabAtiva === 'concluidos' && ['Concluído', 'Entregue'].includes(status)) {
                 pedido.style.display = 'block';
             } else if (tabAtiva === 'cancelados' && status === 'Cancelado') {
                 pedido.style.display = 'block';
@@ -202,7 +202,12 @@ function traduzirStatus(status) {
         'CONFIRMED': 'Confirmado',
         'DISPATCHED': 'Despachado',
         'CONCLUDED': 'Concluído',
-        'CANCELLED': 'Cancelado'
+        'CANCELLED': 'Cancelado',
+        'INTEGRATED': 'Integrado',
+        'PREPARED': 'Preparado',
+        'READY_TO_PICKUP': 'Pronto para Retirada',
+        'PICKED_UP': 'Retirado',
+        'DELIVERED': 'Entregue'
     };
     return traducoes[status] || status;
 }
@@ -251,7 +256,6 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         if (!motivos || motivos.length === 0) {
             throw new Error('Nenhum motivo de cancelamento disponível');
         }
-
         const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
         console.log('Motivo selecionado:', motivoSelecionado);
         
@@ -283,13 +287,11 @@ async function selecionarMotivoCancelamento(motivos) {
             </div>
         `;
         document.body.appendChild(modal);
-
         document.getElementById('confirmarCancelamento').addEventListener('click', () => {
             const motivoSelecionado = document.getElementById('motivoCancelamento').value;
             document.body.removeChild(modal);
             resolve(motivoSelecionado);
         });
-
         document.getElementById('cancelarCancelamento').addEventListener('click', () => {
             document.body.removeChild(modal);
             resolve(null);
@@ -305,6 +307,37 @@ function atualizarStatusPedido(orderId, novoStatus) {
         statusElement.className = `status-${novoStatus.toLowerCase()}`;
         atualizarExibicaoPedidos();
     }
+}
+
+function iniciarAtualizacaoStatusTempoReal(orderId) {
+    if (intervalosAtualizacao[orderId]) {
+        clearInterval(intervalosAtualizacao[orderId]);
+    }
+
+const atualizarStatus = async () => {
+        try {
+            const pedidoAtualizado = await obterDetalhesPedido(orderId);
+            const novoStatus = pedidoAtualizado.status;
+            const statusElement = document.querySelector(`.status-ifood[data-order-id="${orderId}"]`);
+            if (statusElement) {
+                statusElement.textContent = traduzirStatus(novoStatus);
+                statusElement.className = `status-ifood status-${novoStatus.toLowerCase()}`;
+            }
+            atualizarExibicaoPedidos();
+
+            // Se o pedido estiver em um estado final, pare a atualização
+            if (['CONCLUDED', 'CANCELLED', 'DELIVERED'].includes(novoStatus)) {
+                clearInterval(intervalosAtualizacao[orderId]);
+                delete intervalosAtualizacao[orderId];
+            }
+        } catch (error) {
+            console.error(`Erro ao atualizar status do pedido ${orderId}:`, error);
+        }
+    };
+
+    // Executa imediatamente e depois a cada 30 segundos
+    atualizarStatus();
+    intervalosAtualizacao[orderId] = setInterval(atualizarStatus, 30000);
 }
 
 inicializarApp();
