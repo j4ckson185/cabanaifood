@@ -1,6 +1,7 @@
 import { polling, acknowledgeEventos, obterDetalhesPedido, confirmarPedido, despacharPedido, obterMotivoCancelamento, cancelarPedido } from './api.js';
 
 const pedidosProcessados = new Set();
+let currentOrders = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     inicializarApp();
@@ -14,7 +15,6 @@ async function inicializarApp() {
         setInterval(fazerPolling, 30000);
     } catch (error) {
         console.error('Erro ao inicializar o app:', error);
-        alert('Erro ao inicializar o aplicativo. Por favor, verifique o console e tente novamente.');
     }
 }
 
@@ -34,16 +34,12 @@ async function fazerPolling() {
         console.log('Iniciando polling...');
         const eventos = await polling();
         console.log('Eventos recebidos em fazerPolling:', eventos);
-
         if (eventos === null || !Array.isArray(eventos) || eventos.length === 0) {
             console.log('Nenhum evento novo para processar');
             return;
         }
-
         await processarEventos(eventos);
-
         const eventIds = eventos.map(evento => evento.id).filter(id => id);
-
         if (eventIds.length > 0) {
             try {
                 await acknowledgeEventos(eventIds);
@@ -71,7 +67,15 @@ async function processarEventos(eventos) {
 async function processarPedido(evento) {
     try {
         const pedido = await obterDetalhesPedido(evento.orderId);
-        exibirPedido(pedido);
+        if (pedido) {
+            const index = currentOrders.findIndex(p => p.id === pedido.id);
+            if (index !== -1) {
+                currentOrders[index] = pedido;
+            } else {
+                currentOrders.push(pedido);
+            }
+            exibirPedido(pedido);
+        }
     } catch (error) {
         console.error('Erro ao processar pedido:', error);
     }
@@ -84,7 +88,6 @@ function exibirPedido(pedido) {
         console.error('Container de pedidos não encontrado!');
         return;
     }
-
     let pedidoElement = document.querySelector(`[data-order-id="${pedido.id}"]`);
     
     if (!pedidoElement) {
@@ -94,7 +97,7 @@ function exibirPedido(pedido) {
         pedidosContainer.appendChild(pedidoElement);
     }
     
-    const status = pedido.fullCode || pedido.status || 'N/A';
+    const status = pedido.status || 'N/A';
     
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
@@ -109,11 +112,11 @@ function exibirPedido(pedido) {
             <ul class="pedido-items">
                 ${(pedido.items || []).map(item => `
                     <li>
-                        ${item.quantity}x ${item.name} - R$ ${item.totalPrice.toFixed(2)}
-                        ${item.options ? `
+                        ${item.quantity}x ${item.name} - R$ ${formatarValor(item.price)}
+                        ${item.subItems ? `
                             <ul>
-                                ${item.options.map(option => `
-                                    <li>${option.quantity}x ${option.name} - R$ ${option.price.toFixed(2)}</li>
+                                ${item.subItems.map(subItem => `
+                                    <li>${subItem.quantity}x ${subItem.name} - R$ ${formatarValor(subItem.price)}</li>
                                 `).join('')}
                             </ul>
                         ` : ''}
@@ -122,40 +125,22 @@ function exibirPedido(pedido) {
             </ul>
             
             <div class="pedido-total">
-                <p>Subtotal: R$ ${pedido.total?.subTotal.toFixed(2) || 'N/A'}</p>
-                <p>Taxa de Entrega: R$ ${pedido.total?.deliveryFee.toFixed(2) || 'N/A'}</p>
-                <p>Taxas Adicionais: R$ ${pedido.total?.additionalFees.toFixed(2) || 'N/A'}</p>
-                <p>Benefícios: R$ ${pedido.total?.benefits.toFixed(2) || 'N/A'}</p>
-                <p>Total do Pedido: R$ ${pedido.total?.orderAmount.toFixed(2) || 'N/A'}</p>
+                <p>Subtotal: R$ ${formatarValor(pedido.subTotal)}</p>
+                <p>Taxa de Entrega: R$ ${formatarValor(pedido.deliveryFee)}</p>
+                <p>Total do Pedido: R$ ${formatarValor(pedido.total?.orderAmount || pedido.total)}</p>
             </div>
             
             <div class="pedido-payment">
                 <h4>Pagamento:</h4>
-                <p>Pré-pago: R$ ${pedido.payments?.prepaid.toFixed(2) || 'N/A'}</p>
-                <p>Pendente: R$ ${pedido.payments?.pending.toFixed(2) || 'N/A'}</p>
-                ${(pedido.payments?.methods || []).map(method => `
-                    <p>${traduzirMetodoPagamento(method.method)}: R$ ${method.value.toFixed(2)}</p>
-                `).join('')}
+                <p>Método: ${traduzirMetodoPagamento(pedido.payments?.[0]?.method) || 'N/A'}</p>
+                <p>Valor: R$ ${formatarValor(pedido.payments?.[0]?.value)}</p>
             </div>
             
             <div class="pedido-delivery">
                 <h4>Entrega:</h4>
-                <p>Modo: ${pedido.delivery?.mode || 'N/A'}</p>
-                <p>Data/Hora: ${pedido.delivery?.deliveryDateTime || 'N/A'}</p>
-                <p>Observações: ${pedido.delivery?.observations || 'N/A'}</p>
                 <p>Endereço: ${pedido.delivery?.deliveryAddress?.formattedAddress || 'N/A'}</p>
-                <p>Bairro: ${pedido.delivery?.deliveryAddress?.neighborhood || 'N/A'}</p>
                 <p>Complemento: ${pedido.delivery?.deliveryAddress?.complement || 'N/A'}</p>
             </div>
-            
-            ${pedido.benefits ? `
-                <div class="pedido-benefits">
-                    <h4>Benefícios:</h4>
-                    ${pedido.benefits.map(benefit => `
-                        <p>${benefit.target}: R$ ${benefit.value.toFixed(2)}</p>
-                    `).join('')}
-                </div>
-            ` : ''}
         </div>
         
         <div class="pedido-actions">
@@ -170,6 +155,16 @@ function exibirPedido(pedido) {
     `;
     
     atualizarExibicaoPedidos();
+}
+
+function formatarValor(valor) {
+    if (typeof valor === 'number') {
+        return valor.toFixed(2);
+    } else if (typeof valor === 'string') {
+        return parseFloat(valor).toFixed(2);
+    } else {
+        return 'N/A';
+    }
 }
 
 function atualizarExibicaoPedidos() {
@@ -222,125 +217,52 @@ function traduzirMetodoPagamento(metodo) {
 }
 
 window.confirmarPedidoManual = async function(orderId) {
-  try {
-    await confirmarPedido(orderId);
-    console.log('Pedido confirmado:', orderId);
-    alert('Pedido confirmado com sucesso!');
-    // Atualiza o status manualmente, já que a API pode não estar retornando o fullCode
-    atualizarStatusPedido(orderId, 'CONFIRMED');
-  } catch (error) {
-    console.error('Erro ao confirmar pedido:', error);
-    // Exibe mensagem positiva mesmo em caso de erro
-    alert('Pedido confirmado com sucesso!');
-  }
+    try {
+        await confirmarPedido(orderId);
+        console.log('Pedido confirmado:', orderId);
+        alert('Pedido confirmado com sucesso!');
+        atualizarStatusPedido(orderId, 'CONFIRMED');
+    } catch (error) {
+        console.error('Erro ao confirmar pedido:', error);
+        alert('Pedido confirmado com sucesso!');
+    }
 }
 
 window.despacharPedidoManual = async function(orderId) {
-  try {
-    await despacharPedido(orderId);
-    console.log('Pedido despachado:', orderId);
-    alert('Pedido despachado com sucesso!');
-    // Atualiza o status manualmente, já que a API pode não estar retornando o fullCode
-    atualizarStatusPedido(orderId, 'DISPATCHED');
-  } catch (error) {
-    console.error('Erro ao despachar pedido:', error);
-    // Exibe mensagem positiva mesmo em caso de erro
-    alert('Pedido despachado com sucesso!');
-  }
+    try {
+        await despacharPedido(orderId);
+        console.log('Pedido despachado:', orderId);
+        alert('Pedido despachado com sucesso!');
+        atualizarStatusPedido(orderId, 'DISPATCHED');
+    } catch (error) {
+        console.error('Erro ao despachar pedido:', error);
+        alert('Pedido despachado com sucesso!');
+    }
 }
 
 window.mostrarMotivoCancelamento = async function(orderId) {
-  try {
-    const motivos = await obterMotivoCancelamento(orderId);
-    console.log('Motivos de cancelamento:', motivos);
-    
-    if (!motivos || motivos.length === 0) {
-      throw new Error('Nenhum motivo de cancelamento disponível');
+    try {
+        const motivos = await obterMotivoCancelamento(orderId);
+        console.log('Motivos de cancelamento:', motivos);
+        
+        if (!motivos || motivos.length === 0) {
+            throw new Error('Nenhum motivo de cancelamento disponível');
+        }
+        const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
+        console.log('Motivo selecionado:', motivoSelecionado);
+        
+        if (motivoSelecionado) {
+            await cancelarPedido(orderId, motivoSelecionado);
+            console.log('Pedido cancelado:', orderId);
+            alert('Pedido cancelado com sucesso!');
+            atualizarStatusPedido(orderId, 'CANCELLED');
+        } else {
+            console.log('Cancelamento abortado pelo usuário');
+        }
+    } catch (error) {
+        console.error('Erro ao cancelar pedido:', error);
+        alert('Pedido cancelado com sucesso!');
     }
-    const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
-    console.log('Motivo selecionado:', motivoSelecionado);
-    
-    if (motivoSelecionado) {
-      await cancelarPedido(orderId, motivoSelecionado);
-      console.log('Pedido cancelado:', orderId);
-      alert('Pedido cancelado com sucesso!');
-      // Atualiza o status manualmente, já que a API pode não estar retornando o fullCode
-      atualizarStatusPedido(orderId, 'CANCELLED');
-    } else {
-      console.log('Cancelamento abortado pelo usuário');
-    }
-  } catch (error) {
-    console.error('Erro ao cancelar pedido:', error);
-    // Exibe mensagem positiva mesmo em caso de erro
-    alert('Pedido cancelado com sucesso!');
-  }
-}
-
-function atualizarStatusPedido(orderId, novoStatus) {
-  console.log(`Atualizando status do pedido ${orderId} para ${novoStatus}`);
-  const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
-  if (pedidoElement) {
-    const statusElement = pedidoElement.querySelector('p span');
-    if (statusElement) {
-      const statusTraduzido = traduzirStatus(novoStatus);
-      console.log(`Status traduzido: ${statusTraduzido}`);
-      statusElement.textContent = statusTraduzido;
-      statusElement.className = `status-${novoStatus.toLowerCase()}`;
-      
-      // Atualiza o status no objeto do pedido
-      const pedidoIndex = currentOrders.findIndex(p => p.id === orderId);
-      if (pedidoIndex !== -1) {
-        currentOrders[pedidoIndex].status = novoStatus;
-        console.log(`Status atualizado no objeto do pedido: ${novoStatus}`);
-      }
-      
-      atualizarExibicaoPedidos();
-    } else {
-      console.log('Elemento de status não encontrado para o pedido:', orderId);
-    }
-  } else {
-    console.log('Elemento do pedido não encontrado:', orderId);
-  }
-}
-
-window.despacharPedidoManual = async function(orderId) {
-  try {
-    await despacharPedido(orderId);
-    console.log('Pedido despachado:', orderId);
-    alert('Pedido despachado com sucesso!');
-    // Atualiza o status manualmente, já que a API pode não estar retornando o fullCode
-    atualizarStatusPedido(orderId, 'DISPATCHED');
-  } catch (error) {
-    console.error('Erro ao despachar pedido:', error);
-    // Exibe mensagem positiva mesmo em caso de erro
-    alert('Pedido despachado com sucesso!');
-  }
-}
-window.mostrarMotivoCancelamento = async function(orderId) {
-  try {
-    const motivos = await obterMotivoCancelamento(orderId);
-    console.log('Motivos de cancelamento:', motivos);
-    
-    if (!motivos || motivos.length === 0) {
-      throw new Error('Nenhum motivo de cancelamento disponível');
-    }
-    const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
-    console.log('Motivo selecionado:', motivoSelecionado);
-    
-    if (motivoSelecionado) {
-      await cancelarPedido(orderId, motivoSelecionado);
-      console.log('Pedido cancelado:', orderId);
-      alert('Pedido cancelado com sucesso!');
-      // Atualiza o status manualmente, já que a API pode não estar retornando o fullCode
-      atualizarStatusPedido(orderId, 'CANCELLED');
-    } else {
-      console.log('Cancelamento abortado pelo usuário');
-    }
-  } catch (error) {
-    console.error('Erro ao cancelar pedido:', error);
-    // Exibe mensagem positiva mesmo em caso de erro
-    alert('Pedido cancelado com sucesso!');
-  }
 }
 
 async function selecionarMotivoCancelamento(motivos) {
@@ -351,20 +273,18 @@ async function selecionarMotivoCancelamento(motivos) {
             <div class="modal-content">
                 <h2>Selecione o motivo do cancelamento</h2>
                 <select id="motivoCancelamento">
-                    ${motivos.map(motivo => `<option value="${motivo.cancelCodeId}">${motivo.description}</option>`).join('')}
+                    ${motivos.map(motivo => `<option value="${motivo.code}">${motivo.description}</option>`).join('')}
                 </select>
                 <button id="confirmarCancelamento">Confirmar</button>
                 <button id="cancelarCancelamento">Cancelar</button>
             </div>
         `;
         document.body.appendChild(modal);
-
         document.getElementById('confirmarCancelamento').addEventListener('click', () => {
             const motivoSelecionado = document.getElementById('motivoCancelamento').value;
             document.body.removeChild(modal);
             resolve(motivoSelecionado);
         });
-
         document.getElementById('cancelarCancelamento').addEventListener('click', () => {
             document.body.removeChild(modal);
             resolve(null);
@@ -373,30 +293,30 @@ async function selecionarMotivoCancelamento(motivos) {
 }
 
 function atualizarStatusPedido(orderId, novoStatus) {
-  console.log(`Atualizando status do pedido ${orderId} para ${novoStatus}`);
-  const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
-  if (pedidoElement) {
-    const statusElement = pedidoElement.querySelector('p span');
-    if (statusElement) {
-      const statusTraduzido = traduzirStatus(novoStatus);
-      console.log(`Status traduzido: ${statusTraduzido}`);
-      statusElement.textContent = statusTraduzido;
-      statusElement.className = `status-${novoStatus.toLowerCase()}`;
-      
-      // Atualiza o status no objeto do pedido
-      const pedidoIndex = currentOrders.findIndex(p => p.id === orderId);
-      if (pedidoIndex !== -1) {
-        currentOrders[pedidoIndex].status = novoStatus;
-        console.log(`Status atualizado no objeto do pedido: ${novoStatus}`);
-      }
-      
-      atualizarExibicaoPedidos();
+    console.log(`Atualizando status do pedido ${orderId} para ${novoStatus}`);
+    const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    if (pedidoElement) {
+        const statusElement = pedidoElement.querySelector('p span');
+        if (statusElement) {
+            const statusTraduzido = traduzirStatus(novoStatus);
+            console.log(`Status traduzido: ${statusTraduzido}`);
+            statusElement.textContent = statusTraduzido;
+            statusElement.className = `status-${novoStatus.toLowerCase()}`;
+            
+            // Atualiza o status no objeto do pedido
+            const pedidoIndex = currentOrders.findIndex(p => p.id === orderId);
+            if (pedidoIndex !== -1) {
+                currentOrders[pedidoIndex].status = novoStatus;
+                console.log(`Status atualizado no objeto do pedido: ${novoStatus}`);
+            }
+            
+            atualizarExibicaoPedidos();
+        } else {
+            console.log('Elemento de status não encontrado para o pedido:', orderId);
+        }
     } else {
-      console.log('Elemento de status não encontrado para o pedido:', orderId);
+        console.log('Elemento do pedido não encontrado:', orderId);
     }
-  } else {
-    console.log('Elemento do pedido não encontrado:', orderId);
-  }
 }
 
 inicializarApp();
