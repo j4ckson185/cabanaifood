@@ -300,7 +300,7 @@ async function selecionarMotivoCancelamento(motivos) {
 function atualizarStatusPedido(orderId, novoStatus) {
     const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
     if (pedidoElement) {
-        const statusElement = pedidoElement.querySelector('p:first-of-type span');
+        const statusElement = pedidoElement.querySelector('p span');
         statusElement.textContent = traduzirStatus(novoStatus);
         statusElement.className = `status-${novoStatus.toLowerCase()}`;
         atualizarExibicaoPedidos();
