@@ -13,19 +13,19 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
             opcoes.body = JSON.stringify(corpo);
         }
 
-        console.log(`Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
-        const resposta = await fetch(`${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
+        console.log(Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}, opcoes);
+        const resposta = await fetch(${API_BASE_URL}/proxyRequest${endpoint}, opcoes);
         
         const texto = await resposta.text();
-        console.log(`Resposta da API (${resposta.status}):`, texto);
+        console.log(Resposta da API (${resposta.status}):, texto);
 
         if (!resposta.ok) {
-            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}\nResposta: ${texto}`);
+            throw new Error(Erro na API: ${resposta.status} ${resposta.statusText}\nResposta: ${texto});
         }
 
         return texto ? JSON.parse(texto) : null;
     } catch (error) {
-        console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
+        console.error(Erro ao fazer requisição para ${endpoint}:, error);
         throw error;
     }
 }
@@ -39,21 +39,21 @@ export async function acknowledgeEventos(eventIds) {
 }
 
 export async function obterDetalhesPedido(orderId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}`);
+    return fazerRequisicaoAPI(/order/v1.0/orders/${orderId});
 }
 
 export async function confirmarPedido(orderId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/confirm`, 'POST');
+    return fazerRequisicaoAPI(/order/v1.0/orders/${orderId}/confirm, 'POST');
 }
 
 export async function despacharPedido(orderId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/dispatch`, 'POST');
+    return fazerRequisicaoAPI(/order/v1.0/orders/${orderId}/dispatch, 'POST');
 }
 
 export async function obterMotivoCancelamento(orderId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/cancellationReasons`);
+    return fazerRequisicaoAPI(/order/v1.0/orders/${orderId}/cancellationReasons);
 }
 
 export async function cancelarPedido(orderId, cancelCodeId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/requestCancellation`, 'POST', { cancellationCode: cancelCodeId });
+    return fazerRequisicaoAPI(/order/v1.0/orders/${orderId}/requestCancellation, 'POST', { cancellationCode: cancelCodeId });
 }
