@@ -275,18 +275,20 @@ async function selecionarMotivoCancelamento(motivos) {
             <div class="modal-content">
                 <h2>Selecione o motivo do cancelamento</h2>
                 <select id="motivoCancelamento">
-                    ${motivos.map(motivo => `<option value="${motivo.code}">${motivo.description}</option>`).join('')}
+                    ${motivos.map(motivo => `<option value="${motivo.cancelCodeId}">${motivo.description}</option>`).join('')}
                 </select>
                 <button id="confirmarCancelamento">Confirmar</button>
                 <button id="cancelarCancelamento">Cancelar</button>
             </div>
         `;
         document.body.appendChild(modal);
+
         document.getElementById('confirmarCancelamento').addEventListener('click', () => {
             const motivoSelecionado = document.getElementById('motivoCancelamento').value;
             document.body.removeChild(modal);
             resolve(motivoSelecionado);
         });
+
         document.getElementById('cancelarCancelamento').addEventListener('click', () => {
             document.body.removeChild(modal);
             resolve(null);
