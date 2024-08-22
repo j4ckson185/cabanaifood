@@ -312,13 +312,14 @@ function iniciarAtualizacaoStatusTempoReal(orderId) {
         clearInterval(intervalosAtualizacao[orderId]);
     }
 
-const atualizarStatus = async () => {
+    const atualizarStatus = async () => {
         try {
             const pedidoAtualizado = await obterDetalhesPedido(orderId);
             const novoStatus = pedidoAtualizado.status;
             const statusElement = document.querySelector(`.status-ifood[data-order-id="${orderId}"]`);
-            if (statusElement) {
-                statusElement.textContent = traduzirStatus(novoStatus);
+            if (statusElement && novoStatus) {
+                const statusTraduzido = traduzirStatus(novoStatus);
+                statusElement.textContent = statusTraduzido;
                 statusElement.className = `status-ifood status-${novoStatus.toLowerCase()}`;
             }
             atualizarExibicaoPedidos();
