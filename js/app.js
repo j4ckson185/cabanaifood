@@ -85,7 +85,7 @@ function exibirPedido(pedido) {
         return;
     }
 
-    let pedidoElement = document.querySelector([data-order-id="${pedido.id}"]);
+    let pedidoElement = document.querySelector(`[data-order-id="${pedido.id}"]`);
     
     if (!pedidoElement) {
         pedidoElement = document.createElement('div');
@@ -96,7 +96,7 @@ function exibirPedido(pedido) {
     
     const status = pedido.fullCode || pedido.status || 'N/A';
     
-    pedidoElement.innerHTML = 
+    pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
         <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
         <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
@@ -107,18 +107,18 @@ function exibirPedido(pedido) {
         <div class="pedido-details">
             <h4>Itens do Pedido:</h4>
             <ul class="pedido-items">
-                ${(pedido.items || []).map(item => 
+                ${(pedido.items || []).map(item => `
                     <li>
                         ${item.quantity}x ${item.name} - R$ ${item.totalPrice.toFixed(2)}
-                        ${item.options ? 
+                        ${item.options ? `
                             <ul>
-                                ${item.options.map(option => 
+                                ${item.options.map(option => `
                                     <li>${option.quantity}x ${option.name} - R$ ${option.price.toFixed(2)}</li>
-                                ).join('')}
+                                `).join('')}
                             </ul>
-                         : ''}
+                        ` : ''}
                     </li>
-                ).join('')}
+                `).join('')}
             </ul>
             
             <div class="pedido-total">
@@ -133,9 +133,9 @@ function exibirPedido(pedido) {
                 <h4>Pagamento:</h4>
                 <p>Pré-pago: R$ ${pedido.payments?.prepaid.toFixed(2) || 'N/A'}</p>
                 <p>Pendente: R$ ${pedido.payments?.pending.toFixed(2) || 'N/A'}</p>
-                ${(pedido.payments?.methods || []).map(method => 
+                ${(pedido.payments?.methods || []).map(method => `
                     <p>${traduzirMetodoPagamento(method.method)}: R$ ${method.value.toFixed(2)}</p>
-                ).join('')}
+                `).join('')}
             </div>
             
             <div class="pedido-delivery">
@@ -148,26 +148,26 @@ function exibirPedido(pedido) {
                 <p>Complemento: ${pedido.delivery?.deliveryAddress?.complement || 'N/A'}</p>
             </div>
             
-            ${pedido.benefits ? 
+            ${pedido.benefits ? `
                 <div class="pedido-benefits">
                     <h4>Benefícios:</h4>
-                    ${pedido.benefits.map(benefit => 
+                    ${pedido.benefits.map(benefit => `
                         <p>${benefit.target}: R$ ${benefit.value.toFixed(2)}</p>
-                    ).join('')}
+                    `).join('')}
                 </div>
-             : ''}
+            ` : ''}
         </div>
         
         <div class="pedido-actions">
-            ${status !== 'DISPATCHED' && status !== 'CONCLUDED' && status !== 'CANCELLED' ? 
+            ${status !== 'DISPATCHED' && status !== 'CONCLUDED' && status !== 'CANCELLED' ? `
                 <button class="btn btn-confirm" onclick="confirmarPedidoManual('${pedido.id}')">Confirmar</button>
                 <button class="btn btn-dispatch" onclick="despacharPedidoManual('${pedido.id}')">Despachar</button>
-             : ''}
-            ${status !== 'CONCLUDED' && status !== 'CANCELLED' ? 
+            ` : ''}
+            ${status !== 'CONCLUDED' && status !== 'CANCELLED' ? `
                 <button class="btn btn-cancel" onclick="mostrarMotivoCancelamento('${pedido.id}')">Cancelar</button>
-             : ''}
+            ` : ''}
         </div>
-    ;
+    `;
     
     atualizarExibicaoPedidos();
 }
@@ -264,7 +264,7 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         }
     } catch (error) {
         console.error('Erro ao cancelar pedido:', error);
-        alert(Erro ao cancelar pedido: ${error.message});
+        alert(`Erro ao cancelar pedido: ${error.message}`);
     }
 }
 
@@ -272,16 +272,16 @@ async function selecionarMotivoCancelamento(motivos) {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal';
-        modal.innerHTML = 
+        modal.innerHTML = `
             <div class="modal-content">
                 <h2>Selecione o motivo do cancelamento</h2>
                 <select id="motivoCancelamento">
-                    ${motivos.map(motivo => <option value="${motivo.cancelCodeId}">${motivo.description}</option>).join('')}
+                    ${motivos.map(motivo => `<option value="${motivo.cancelCodeId}">${motivo.description}</option>`).join('')}
                 </select>
                 <button id="confirmarCancelamento">Confirmar</button>
                 <button id="cancelarCancelamento">Cancelar</button>
             </div>
-        ;
+        `;
         document.body.appendChild(modal);
 
         document.getElementById('confirmarCancelamento').addEventListener('click', () => {
@@ -298,11 +298,11 @@ async function selecionarMotivoCancelamento(motivos) {
 }
 
 function atualizarStatusPedido(orderId, novoStatus) {
-    const pedidoElement = document.querySelector([data-order-id="${orderId}"]);
+    const pedidoElement = document.querySelector(`[data-order-id="${orderId}"]`);
     if (pedidoElement) {
         const statusElement = pedidoElement.querySelector('p:first-of-type span');
         statusElement.textContent = traduzirStatus(novoStatus);
-        statusElement.className = status-${novoStatus.toLowerCase()};
+        statusElement.className = `status-${novoStatus.toLowerCase()}`;
         atualizarExibicaoPedidos();
     }
 }
