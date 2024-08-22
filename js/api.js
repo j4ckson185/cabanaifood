@@ -1,31 +1,29 @@
-const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net/proxyRequest';
+const API_BASE_URL = 'https://us-central1-cabana-ifood.cloudfunctions.net';
 
 async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
     try {
-        console.log(`Fazendo requisição para ${endpoint}`);
         const opcoes = {
             method: metodo,
             headers: {
                 'Content-Type': 'application/json',
             },
         };
+
         if (corpo) {
             opcoes.body = JSON.stringify(corpo);
         }
-        const resposta = await fetch(`${API_BASE_URL}${endpoint}`, opcoes);
+
+        console.log(`Fazendo requisição para ${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
+        const resposta = await fetch(`${API_BASE_URL}/proxyRequest${endpoint}`, opcoes);
         
         const texto = await resposta.text();
         console.log(`Resposta da API (${resposta.status}):`, texto);
 
         if (!resposta.ok) {
-            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}\nDetalhes: ${texto}`);
+            throw new Error(`Erro na API: ${resposta.status} ${resposta.statusText}\nResposta: ${texto}`);
         }
 
-        if (!texto) {
-            return null;
-        }
-
-        return JSON.parse(texto);
+        return texto ? JSON.parse(texto) : null;
     } catch (error) {
         console.error(`Erro ao fazer requisição para ${endpoint}:`, error);
         throw error;
@@ -33,12 +31,7 @@ async function fazerRequisicaoAPI(endpoint, metodo = 'GET', corpo = null) {
 }
 
 export async function polling() {
-    try {
-        return await fazerRequisicaoAPI('/events/v1.0/events:polling');
-    } catch (error) {
-        console.error('Erro no polling:', error);
-        return null;
-    }
+    return fazerRequisicaoAPI('/events/v1.0/events:polling');
 }
 
 export async function acknowledgeEventos(eventIds) {
