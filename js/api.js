@@ -43,7 +43,9 @@ export async function obterDetalhesPedido(orderId) {
 }
 
 export async function confirmarPedido(orderId) {
-    return fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/confirm`, 'POST');
+  const resultado = await fazerRequisicaoAPI(`/order/v1.0/orders/${orderId}/confirm`, 'POST');
+  console.log('Resposta da confirmação:', resultado);
+  return { fullCode: resultado.status || 'CONFIRMED', ...resultado };
 }
 
 export async function despacharPedido(orderId) {
