@@ -36,21 +36,19 @@ async function fazerPolling() {
         console.log('Iniciando polling...');
         const eventos = await polling();
         console.log('Eventos recebidos em fazerPolling:', eventos);
-        if (eventos === null || !Array.isArray(eventos) || eventos.length === 0) {
-            console.log('Nenhum evento novo para processar');
-            return;
-        }
-        await processarEventos(eventos);
-        const eventIds = eventos.map(evento => evento.id).filter(id => id);
-        if (eventIds.length > 0) {
-            try {
-                await acknowledgeEventos(eventIds);
-                console.log('Eventos reconhecidos com sucesso:', eventIds);
-            } catch (ackError) {
-                console.error('Erro ao reconhecer eventos:', ackError);
+        if (eventos && Array.isArray(eventos) && eventos.length > 0) {
+            await processarEventos(eventos);
+            const eventIds = eventos.map(evento => evento.id).filter(id => id);
+            if (eventIds.length > 0) {
+                try {
+                    await acknowledgeEventos(eventIds);
+                    console.log('Eventos reconhecidos com sucesso:', eventIds);
+                } catch (ackError) {
+                    console.error('Erro ao reconhecer eventos:', ackError);
+                }
             }
         } else {
-            console.log('Nenhum ID de evento válido para reconhecer');
+            console.log('Nenhum evento novo para processar');
         }
     } catch (error) {
         console.error('Erro ao fazer polling:', error);
@@ -70,6 +68,7 @@ async function processarPedido(evento) {
     try {
         const pedido = await obterDetalhesPedido(evento.orderId);
         if (pedido) {
+            console.log('Pedido processado:', pedido);
             const index = currentOrders.findIndex(p => p.id === pedido.id);
             if (index !== -1) {
                 currentOrders[index] = pedido;
@@ -78,6 +77,8 @@ async function processarPedido(evento) {
             }
             exibirPedido(pedido);
             iniciarAtualizacaoStatusTempoReal(pedido.id);
+        } else {
+            console.error('Pedido não encontrado:', evento.orderId);
         }
     } catch (error) {
         console.error('Erro ao processar pedido:', error);
@@ -105,7 +106,7 @@ function exibirPedido(pedido) {
     pedidoElement.innerHTML = `
         <h3>Pedido #${pedido.displayId || pedido.id}</h3>
         <p>Status: <span class="status-${status.toLowerCase()}">${traduzirStatus(status)}</span></p>
-        <p>Status iFood: <span class="status-ifood" data-order-id="${pedido.id}">Atualizando...</span></p>
+        <p>Status iFood: <span class="status-ifood" data-order-id="${pedido.id}">${traduzirStatus(status)}</span></p>
         <p>Cliente: ${pedido.customer?.name || 'N/A'}</p>
         <p>Tipo: ${pedido.orderType || 'N/A'}</p>
         <p>Momento: ${pedido.orderTiming || 'N/A'}</p>
@@ -129,15 +130,15 @@ function exibirPedido(pedido) {
             </ul>
             
             <div class="pedido-total">
-                <p>Subtotal: R$ ${formatarValor(pedido.subTotal)}</p>
-                <p>Taxa de Entrega: R$ ${formatarValor(pedido.deliveryFee)}</p>
-                <p>Total do Pedido: R$ ${formatarValor(pedido.total)}</p>
+                <p>Subtotal: R$ ${pedido.subTotal?.toFixed(2) || 'N/A'}</p>
+                <p>Taxa de Entrega: R$ ${pedido.deliveryFee?.toFixed(2) || 'N/A'}</p>
+                <p>Total do Pedido: R$ ${pedido.total?.toFixed(2) || 'N/A'}</p>
             </div>
             
             <div class="pedido-payment">
                 <h4>Pagamento:</h4>
                 <p>Método: ${traduzirMetodoPagamento(pedido.payments?.[0]?.method) || 'N/A'}</p>
-                <p>Valor: R$ ${formatarValor(pedido.payments?.[0]?.value)}</p>
+                <p>Valor: R$ ${pedido.payments?.[0]?.value?.toFixed(2) || 'N/A'}</p>
             </div>
             
             <div class="pedido-delivery">
@@ -159,16 +160,6 @@ function exibirPedido(pedido) {
     `;
     
     atualizarExibicaoPedidos();
-}
-
-function formatarValor(valor) {
-    if (typeof valor === 'number') {
-        return valor.toFixed(2);
-    } else if (typeof valor === 'string') {
-        return parseFloat(valor).toFixed(2);
-    } else {
-        return 'N/A';
-    }
 }
 
 function atualizarExibicaoPedidos() {
