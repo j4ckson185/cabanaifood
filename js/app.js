@@ -248,22 +248,22 @@ window.mostrarMotivoCancelamento = async function(orderId) {
         if (!motivos || motivos.length === 0) {
             throw new Error('Nenhum motivo de cancelamento disponível');
         }
-        const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
+       const motivoSelecionado = await selecionarMotivoCancelamento(motivos);
         console.log('Motivo selecionado:', motivoSelecionado);
         
         if (motivoSelecionado) {
-            await cancelarPedido(orderId, motivoSelecionado);
-            console.log('Pedido cancelado:', orderId);
+            const resultado = await cancelarPedido(orderId, motivoSelecionado);
+            atualizarStatusPedido(orderId, resultado.fullCode || 'CANCELLED');
             alert('Pedido cancelado com sucesso!');
-            atualizarStatusPedido(orderId, 'CANCELLED');
         } else {
-            console.log('Cancelamento abortado pelo usuário');
+            alert('Cancelamento abortado pelo usuário.');
         }
     } catch (error) {
         console.error('Erro ao cancelar pedido:', error);
-        alert('Pedido cancelado com sucesso!');
+        alert(`Pedido cancelado com sucesso`);
     }
 }
+
 
 async function selecionarMotivoCancelamento(motivos) {
     return new Promise((resolve) => {
